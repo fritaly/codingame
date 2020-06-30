@@ -1,4 +1,4 @@
-package codingame.theriver
+package codingame
 
 input = new Scanner(System.in);
 

@@ -1,4 +1,4 @@
-package codingame.blowingfuse
+package codingame
 
 class Appliance {
 

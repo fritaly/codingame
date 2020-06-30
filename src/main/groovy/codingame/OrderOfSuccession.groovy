@@ -1,4 +1,4 @@
-package codingame.orderofsuccession
+package codingame
 
 class Person implements Comparable<Person> {
     String name

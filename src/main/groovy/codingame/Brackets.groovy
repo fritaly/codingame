@@ -1,4 +1,4 @@
-package codingame.brackets
+package codingame
 
 input = new Scanner(System.in);
 

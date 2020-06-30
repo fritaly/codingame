@@ -1,4 +1,4 @@
-package codingame.ghostlegs
+package codingame
 
 input = new Scanner(System.in);
 

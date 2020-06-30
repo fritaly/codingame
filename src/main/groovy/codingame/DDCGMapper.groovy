@@ -1,4 +1,4 @@
-package codingame.ddcgmapper
+package codingame
 
 class Pattern {
 

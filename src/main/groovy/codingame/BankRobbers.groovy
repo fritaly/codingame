@@ -1,4 +1,4 @@
-package codingame.bankrobbers
+package codingame
 
 class Vault {
 

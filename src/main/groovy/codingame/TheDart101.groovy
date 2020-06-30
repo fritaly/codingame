@@ -1,4 +1,4 @@
-package codingame.dart101
+package codingame
 
 class Player {
 

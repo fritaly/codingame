@@ -1,4 +1,4 @@
-package codingame.autopickup
+package codingame
 
 def input = new Scanner(System.in);
 def n = input.nextInt()

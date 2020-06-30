@@ -1,4 +1,4 @@
-package codingame.enigma
+package codingame
 
 interface Cipher {
 

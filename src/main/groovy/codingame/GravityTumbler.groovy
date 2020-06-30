@@ -1,4 +1,4 @@
-package codingame.gravitytumbler
+package codingame
 
 private void dump(char[][] array, PrintStream stream) {
     stream.println array.collect { row -> new String(row) }.join('\n')

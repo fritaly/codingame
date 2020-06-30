@@ -1,4 +1,4 @@
-package codingame.organiccompounds
+package codingame
 
 def input = new Scanner(System.in)
 

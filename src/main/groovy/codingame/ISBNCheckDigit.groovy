@@ -1,4 +1,4 @@
-package codingame.isbn
+package codingame
 
 input = new Scanner(System.in);
 

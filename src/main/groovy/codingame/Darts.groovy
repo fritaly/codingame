@@ -1,4 +1,4 @@
-package codingame.darts
+package codingame
 
 class Square {
     final int size

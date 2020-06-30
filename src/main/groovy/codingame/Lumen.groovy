@@ -1,4 +1,4 @@
-package codingame.lumen
+package codingame
 
 input = new Scanner(System.in);
 
