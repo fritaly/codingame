@@ -14,50 +14,56 @@ class Note {
     NoteType type
     char[][] array
 
+    List<Integer> cache
+
     /**
      * Returns a list of integers representing the values of y where the node is the widest.
      */
     List<Integer> getYValues() {
         assert array
 
-        def maxWidth = 0
-        def yValues = [] as List<Integer>
+        if (cache == null) {
+            def maxWidth = 0
+            def yValues = [] as List<Integer>
 
-        // Search the values of Y for which the note is the widest. Search the first and last black dot on the line
-        for (int y = 0; y < array.length; y++) {
-            int firstBlack = -1, lastBlack = -1
+            // Search the values of Y for which the note is the widest. Search the first and last black dot on the line
+            for (int y = 0; y < array.length; y++) {
+                int firstBlack = -1, lastBlack = -1
 
-            for (int x = startX; x <= endX; x++) {
-                def c = array[y][x]
+                for (int x = startX; x <= endX; x++) {
+                    def c = array[y][x]
 
-                if (c == 'B') {
-                    if (firstBlack == -1) {
-                        firstBlack = x
+                    if (c == 'B') {
+                        if (firstBlack == -1) {
+                            firstBlack = x
+                        }
+
+                        lastBlack = x
                     }
+                }
 
-                    lastBlack = x
+                if (firstBlack != -1) {
+                    // The line isn't completely white, what's the width between the first and last black dots ?
+                    def width = (lastBlack - firstBlack) + 1
+
+                    if (width > maxWidth) {
+                        yValues.clear()
+                        yValues << y
+                        maxWidth = width
+                    } else if (width == maxWidth) {
+                        yValues << y
+                    } else {
+                        // Do nothing
+                    }
                 }
             }
 
-            if (firstBlack != -1) {
-                // The line isn't completely white, what's the width between the first and last black dots ?
-                def width = (lastBlack - firstBlack) + 1
+            System.err.println("Max width (${maxWidth}) found for y in ${yValues}")
 
-                if (width > maxWidth) {
-                    yValues.clear()
-                    yValues << y
-                    maxWidth = width
-                } else if (width == maxWidth) {
-                    yValues << y
-                } else {
-                    // Do nothing
-                }
-            }
+            cache = yValues
         }
 
-        System.err.println("Max width (${maxWidth}) found for y in ${yValues}")
-
-        yValues
+        cache
     }
 
     @Override
