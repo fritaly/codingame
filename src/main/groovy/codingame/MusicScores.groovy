@@ -1,5 +1,9 @@
 package codingame
 
+enum Color {
+    BLACK, WHITE
+}
+
 class Portee {
 
     /** The index of the row where the portee starts */
@@ -170,5 +174,44 @@ hidePortees(portees, width, array)
 System.err.println("===")
 
 dump(array)
+
+// Detect the notes by analyzing the columns
+def buffer = [] as List<Color>
+
+for (int x = 0; x < width; x++) {
+    def encoding = encodeColumn(array, x)
+
+    if (encoding.matches('W\\d+')) {
+        if (buffer) {
+            if (buffer.contains(Color.WHITE)) {
+                System.err.println("Detected a white note")
+            } else {
+                System.err.println("Detected a black note")
+            }
+
+            buffer.clear()
+        }
+
+        System.err.println("Column #${x}: [empty]")
+    } else {
+        // Examples: "W90 B13 W73" (black note) or "W50 B2 W17 B2 W105" (white note)
+        // Remove the leading and trailing white sections
+        def pattern = java.util.regex.Pattern.compile('(W\\d+) (?<signature>.+) (W\\d+)')
+
+        def matcher = pattern.matcher(encoding)
+
+        if (!matcher.matches()) {
+            throw new RuntimeException("Unable to parse encoding '${encoding}'")
+        }
+
+        def signature = matcher.group('signature')
+
+        def color = signature.contains('W') ? Color.WHITE : Color.BLACK
+
+        buffer << color
+
+        System.err.println("Column #${x}: ${encoding} -> ${signature} (${color})")
+    }
+}
 
 println "AQ DH"
