@@ -65,20 +65,35 @@ private String encodeColumn(char[][] array, int x) {
     result.join(' ')
 }
 
-private int countMaxContiguousBlackDots(char[] row) {
-    def result = 0, count = 0
+/**
+ * Hides the portees by replacing their black dots by white ones (but only when relevant)
+ */
+private List<Portee> hidePortees(List<Portee> portees, width, array) {
+    portees.each { portee ->
+        // Hide from top to bottom
+        for (int y = portee.start; y <= portee.end; y++) {
+            for (int x = 0; x < width; x++) {
+                def c = array[y][x]
+                def top = array[y - 1][x]
 
-    for (int x = 0; x < row.length; x++) {
-        if (row[x] == 'B') {
-            count++
-        } else {
-            result = Math.max(result, count)
+                if (c == 'B' && (top != 'B')) {
+                    array[y][x] = 'W'
+                }
+            }
+        }
 
-            count = 0
+        // Hide from bottom to top
+        for (int y = portee.end; y >= portee.start; y--) {
+            for (int x = 0; x < width; x++) {
+                def c = array[y][x]
+                def bottom = array[y + 1][x]
+
+                if (c == 'B' && (bottom != 'B')) {
+                    array[y][x] = 'W'
+                }
+            }
         }
     }
-
-    result
 }
 
 def input = new Scanner(System.in)
@@ -149,5 +164,11 @@ for (int x = 0; x < width; x++) {
 }
 
 System.err.println("Portees detected: ${portees}")
+
+hidePortees(portees, width, array)
+
+System.err.println("===")
+
+dump(array)
 
 println "AQ DH"
