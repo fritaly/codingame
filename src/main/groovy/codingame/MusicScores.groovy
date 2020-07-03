@@ -1,23 +1,61 @@
 package codingame
 
+// Whether to enable debug logs
+def debug = false
+
+/**
+ * Enumerates the location of a note relative to a portee: above, on it or below.
+ */
 enum Location {
     ABOVE, ON, BELOW
 }
 
+/**
+ * Enumerates the 7 different notes.
+ */
 enum NoteType {
     A, B, C, D, E, F, G
+
+    NoteType noteAfter() {
+        def values = NoteType.values()
+
+        values[(ordinal() + 1) % values.length]
+    }
+
+    NoteType noteBefore() {
+        def values = NoteType.values()
+
+        values[(ordinal() - 1 + values.length) % values.length]
+    }
 }
 
 class Note {
-    int startX, endX
+
+    /** The value of X where the node starts (in the partition). */
+    int startX
+
+    /** The value of X where the node ends (in the partition). */
+    int endX
+
+    /** The color of the node (black or white). */
     Color color
+
+    /** The type of the note (A, B, C, etc). */
     NoteType type
+
+    /** Reference to the partition where the note appears. */
     char[][] array
 
-    List<Integer> cache
+    /** Internal cache used by the method Note#getYValues(). */
+    private List<Integer> cache
+
+    /** Formats the node as a 2-character string. Example: "AH", "DQ". */
+    String asText() {
+        "${type.name()}${color.symbol()}"
+    }
 
     /**
-     * Returns a list of integers representing the values of y where the node is the widest.
+     * Returns a list of integers representing the values of y where the note is the widest.
      */
     List<Integer> getYValues() {
         assert array
@@ -228,7 +266,9 @@ def array = new char[height][width]
 
 def image = input.nextLine()
 
-System.err.println("${image}")
+if (debug) {
+    System.err.println("${image}")
+}
 
 fill(image, array, width)
 
@@ -243,7 +283,9 @@ def portees = [] as List<Portee>
 for (int x = 0; x < width; x++) {
     def encoding = encodeColumn(array, x)
 
-    System.err.println("Column #${x} -> ${encoding}")
+    if (debug) {
+        System.err.println("Column #${x} -> ${encoding}")
+    }
 
     if (!encoding.matches('W[0-9]+')) {
         System.err.println("Found the start of the portees")
@@ -290,9 +332,11 @@ System.err.println("Portees detected: ${portees}")
 
 hidePortees(portees, width, array)
 
-System.err.println("===")
+if (debug) {
+    System.err.println("===")
 
-dump(array)
+    dump(array)
+}
 
 // Detect the notes by analyzing the columns
 def buffer = [] as List<Color>
@@ -318,7 +362,9 @@ for (int x = 0; x < width; x++) {
             buffer.clear()
         }
 
-        System.err.println("Column #${x}: [empty]")
+        if (debug) {
+            System.err.println("Column #${x}: [empty]")
+        }
     } else {
         // Examples: "W90 B13 W73" (black note) or "W50 B2 W17 B2 W105" (white note)
         // Remove the leading and trailing white sections
@@ -340,33 +386,69 @@ for (int x = 0; x < width; x++) {
 
         buffer << color
 
-        System.err.println("Column #${x}: ${encoding} -> ${signature} (${color})")
+        if (debug) {
+            System.err.println("Column #${x}: ${encoding} -> ${signature} (${color})")
+        }
     }
 }
 
-System.err.println("Notes: ${notes}")
+if (debug) {
+    System.err.println("Notes: ${notes}")
+}
 
+// Identify the notes from their relative position to the 5 portees
 notes.each { note ->
-    // Find where the note is located
+    def porteesAbove = [] as List<Portee>, porteesUnder = [] as List<Portee>
 
     for (portee in portees) {
         def location = portee.locate(note)
 
         switch (location) {
             case Location.ABOVE:
-                System.err.println("Note above the portee (${portee.note})")
+                if (debug) {
+                    System.err.println("Note above the portee (${portee.note})")
+                }
+                porteesUnder << portee
                 break
             case Location.BELOW:
-                System.err.println("Note below the portee (${portee.note})")
+                if (debug) {
+                    System.err.println("Note below the portee (${portee.note})")
+                }
+                porteesAbove << portee
                 break
             case Location.ON:
-                System.err.println("Note on the portee (${portee.note})")
                 note.type = portee.note
+                if (debug) {
+                    System.err.println("Note is ${note.type}")
+                }
                 break
+        }
+
+        if (note.type) {
+            // Stop looping, we identified the note
+            break
+        }
+    }
+
+    if (!note.type) {
+        // The node is between 2 portees, identify it
+        if (porteesAbove) {
+            note.type = porteesAbove.last().note.noteBefore()
+        } else if (porteesUnder) {
+            note.type = porteesUnder.first().note.noteAfter()
+        } else {
+            throw new IllegalStateException()
+        }
+
+        if (debug) {
+            System.err.println("Note is ${note.type}")
         }
     }
 }
 
-System.err.println("Notes: ${notes}")
+if (debug) {
+    System.err.println("Notes: ${notes}")
+}
 
-println "AQ DH"
+// Print all the notes detected in order as 2 characters
+println notes.collect { it.asText() }.join(' ')
