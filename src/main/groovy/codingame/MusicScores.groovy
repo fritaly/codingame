@@ -7,8 +7,12 @@ enum NoteType {
 class Note {
     int startX, endX
     Color color
+    NoteType type
 
-    NoteType getType(char[][] array) {
+    /**
+     * Returns a list of integers representing the values of y where the node is the widest.
+     */
+    List<Integer> getYValues(char[][] array) {
         assert array
 
         def maxWidth = 0
@@ -47,11 +51,13 @@ class Note {
         }
 
         System.err.println("Max width (${maxWidth}) found for y in ${yValues}")
+
+        yValues
     }
 
     @Override
     String toString() {
-        "Note[color: ${color}, x=[${startX},${endX}]]"
+        "Note[color: ${color}, type: ${type}, x=[${startX},${endX}]]"
     }
 }
 
@@ -68,14 +74,31 @@ enum Color {
 class Portee {
 
     /** The index of the row where the portee starts */
-    int start
+    int startY
 
     /** The index (inclusive) of the row where the portee ends. */
-    int end
+    int endY
+
+    /** The note associated to the portee. */
+    NoteType note
+
+    int compare(int y) {
+        if ((startY <= y) && (y <= endY)) {
+            return 0
+        }
+
+        if (y < startY) {
+            // Dot above the portee
+            return -1
+        }
+
+        // Dot under the portee
+        +1
+    }
 
     @Override
     String toString() {
-        "Portee[${start}-${end}]"
+        "Portee[${startY}-${endY}, note: ${note}]"
     }
 }
 
@@ -136,7 +159,7 @@ private String encodeColumn(char[][] array, int x) {
 private List<Portee> hidePortees(List<Portee> portees, width, array) {
     portees.each { portee ->
         // Hide from top to bottom
-        for (int y = portee.start; y <= portee.end; y++) {
+        for (int y = portee.startY; y <= portee.endY; y++) {
             for (int x = 0; x < width; x++) {
                 def c = array[y][x]
                 def top = array[y - 1][x]
@@ -148,7 +171,7 @@ private List<Portee> hidePortees(List<Portee> portees, width, array) {
         }
 
         // Hide from bottom to top
-        for (int y = portee.end; y >= portee.start; y--) {
+        for (int y = portee.endY; y >= portee.startY; y--) {
             for (int x = 0; x < width; x++) {
                 def c = array[y][x]
                 def bottom = array[y + 1][x]
@@ -210,13 +233,17 @@ for (int x = 0; x < width; x++) {
         System.err.println("Portee height: ${porteeHeight}")
         System.err.println("Line height: ${lineHeight}")
 
+        // The notes associated to the portees detected upon scanning (from top to bottom):) F, D, B, G, E
+        def notes = [ NoteType.F, NoteType.D, NoteType.B, NoteType.G, NoteType.E ]
+
         for (int i = 1; i < matcher.groupCount(); i++) {
             def count = Integer.parseInt(matcher.group(i))
 
             if (i % 2 == 0) {
                 def portee = new Portee()
-                portee.start = index
-                portee.end = index + count - 1
+                portee.startY = index
+                portee.endY = index + count - 1
+                portee.note = notes.remove(0)
 
                 portees << portee
             }
@@ -288,7 +315,32 @@ for (int x = 0; x < width; x++) {
 System.err.println("Notes: ${notes}")
 
 notes.each { note ->
-    note.getType(array)
+    def yValues = note.getYValues(array)
+
+    // Find where the note is located
+
+    for (portee in portees) {
+        def sum = 0
+
+        yValues.each { y ->
+            sum += portee.compare(y)
+        }
+
+        if (sum == (-1 * yValues.size())) {
+            // The note is above the portee
+            System.err.println("Sum=${sum} -> Note above the portee")
+        } else if (sum == (+1 * yValues.size())) {
+            // The note is under the portee
+            note.type = portee.note
+
+            System.err.println("Sum=${sum} -> Note under the portee")
+        } else {
+            // The note is on the portee
+            System.err.println("Sum=${sum} -> Note on the portee")
+        }
+    }
 }
+
+System.err.println("Notes: ${notes}")
 
 println "AQ DH"
