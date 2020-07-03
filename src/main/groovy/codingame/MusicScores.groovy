@@ -47,7 +47,7 @@ private String encodeColumn(char[][] array, int x) {
     for (int y = 0; y < array.length; y++) {
         def color = array[y][x]
 
-        if (color == previousColor) {
+        if ((color == previousColor) || (previousColor == ' ')) {
             count++
         } else if (previousColor != ' ') {
             result << "${previousColor}${count}"
