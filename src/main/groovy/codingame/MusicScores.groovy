@@ -1,8 +1,53 @@
 package codingame
 
+enum NoteType {
+    A, B, C, D, E, F, G
+}
+
 class Note {
     int startX, endX
     Color color
+
+    NoteType getType(char[][] array) {
+        assert array
+
+        def maxWidth = 0
+        def yValues = [] as List<Integer>
+
+        // Search the values of Y for which the note is the widest. Search the first and last black dot on the line
+        for (int y = 0; y < array.length; y++) {
+            int firstBlack = -1, lastBlack = -1
+
+            for (int x = startX; x <= endX; x++) {
+                def c = array[y][x]
+
+                if (c == 'B') {
+                    if (firstBlack == -1) {
+                        firstBlack = x
+                    }
+
+                    lastBlack = x
+                }
+            }
+
+            if (firstBlack != -1) {
+                // The line isn't completely white, what's the width between the first and last black dots ?
+                def width = (lastBlack - firstBlack) + 1
+
+                if (width > maxWidth) {
+                    yValues.clear()
+                    yValues << y
+                    maxWidth = width
+                } else if (width == maxWidth) {
+                    yValues << y
+                } else {
+                    // Do nothing
+                }
+            }
+        }
+
+        System.err.println("Max width (${maxWidth}) found for y in ${yValues}")
+    }
 
     @Override
     String toString() {
@@ -241,5 +286,9 @@ for (int x = 0; x < width; x++) {
 }
 
 System.err.println("Notes: ${notes}")
+
+notes.each { note ->
+    note.getType(array)
+}
 
 println "AQ DH"
