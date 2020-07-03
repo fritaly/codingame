@@ -1,5 +1,19 @@
 package codingame
 
+class Portee {
+
+    /** The index of the row where the portee starts */
+    int start
+
+    /** The index (inclusive) of the row where the portee ends. */
+    int end
+
+    @Override
+    String toString() {
+        "Portee[${start}-${end}]"
+    }
+}
+
 private void dump(char[][] array) {
     array.each { row ->
         // Replace all the characters 'W' by '.' to make the dump easier to read
@@ -90,6 +104,8 @@ dump(array)
 // pattern "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42" is the start of the "portees"
 System.err.println("Searching portees ...")
 
+def portees = [] as List<Portee>
+
 for (int x = 0; x < width; x++) {
     def encoding = encodeColumn(array, x)
 
@@ -118,9 +134,11 @@ for (int x = 0; x < width; x++) {
             def count = Integer.parseInt(matcher.group(i))
 
             if (i % 2 == 0) {
-                def start = index
+                def portee = new Portee()
+                portee.start = index
+                portee.end = index + count - 1
 
-                System.err.println("Portee detected at rows ${start}-${start+count-1}")
+                portees << portee
             }
 
             index += count
@@ -129,5 +147,7 @@ for (int x = 0; x < width; x++) {
         break
     }
 }
+
+System.err.println("Portees detected: ${portees}")
 
 println "AQ DH"
