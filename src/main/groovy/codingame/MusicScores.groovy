@@ -98,8 +98,8 @@ for (int x = 0; x < width; x++) {
     if (!encoding.matches('W[0-9]+')) {
         System.err.println("Found the start of the portees")
 
-        // Example: "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42"
-        def pattern = java.util.regex.Pattern.compile('W(\\d+) B(\\d+) W(\\d+) B(\\d+) W(\\d+) B(\\d+) W(\\d+) B(\\d+) W(\\d+) B(\\d+) W(\\d+)')
+        // Example: "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42" where all the portees MUST have the exact same height
+        def pattern = java.util.regex.Pattern.compile('W(\\d+) B(?<portee>\\d+) W(\\d+) B(\\2) W(\\d+) B(\\2) W(\\d+) B(\\2) W(\\d+) B(\\2) W(\\d+)')
 
         def matcher = pattern.matcher(encoding)
 
@@ -108,6 +108,9 @@ for (int x = 0; x < width; x++) {
         }
 
         def index = 0
+        def porteeHeight = Integer.parseInt(matcher.group('portee'))
+
+        System.err.println("Portee height: ${porteeHeight}")
 
         for (int i = 1; i < matcher.groupCount(); i++) {
             def count = Integer.parseInt(matcher.group(i))
