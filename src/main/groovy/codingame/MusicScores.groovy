@@ -1,5 +1,9 @@
 package codingame
 
+enum Location {
+    ABOVE, ON, BELOW
+}
+
 enum NoteType {
     A, B, C, D, E, F, G
 }
@@ -8,11 +12,12 @@ class Note {
     int startX, endX
     Color color
     NoteType type
+    char[][] array
 
     /**
      * Returns a list of integers representing the values of y where the node is the widest.
      */
-    List<Integer> getYValues(char[][] array) {
+    List<Integer> getYValues() {
         assert array
 
         def maxWidth = 0
@@ -81,6 +86,26 @@ class Portee {
 
     /** The note associated to the portee. */
     NoteType note
+
+    Location locate(Note _note) {
+        assert _note
+
+        // Find all the values of y where the note is the widest
+        def yValues = _note.getYValues()
+
+        // Compare each value of y and sum all the values
+        def sum = yValues.collect { y -> compare(y) }.sum()
+
+        if (sum == (-1 * yValues.size())) {
+            // All the y values are above the portee
+            return Location.ABOVE
+        } else if (sum == (+1 * yValues.size())) {
+            // All the y values are below the portee
+            return Location.BELOW
+        }
+
+        Location.ON
+    }
 
     int compare(int y) {
         if ((startY <= y) && (y <= endY)) {
@@ -274,6 +299,7 @@ for (int x = 0; x < width; x++) {
     if (encoding.matches('W\\d+')) {
         if (buffer) {
             def note = new Note()
+            note.array = array
             note.startX = startX
             note.endX = x-1
             note.color = (buffer.contains(Color.WHITE)) ? Color.WHITE : Color.BLACK
@@ -315,28 +341,22 @@ for (int x = 0; x < width; x++) {
 System.err.println("Notes: ${notes}")
 
 notes.each { note ->
-    def yValues = note.getYValues(array)
-
     // Find where the note is located
 
     for (portee in portees) {
-        def sum = 0
+        def location = portee.locate(note)
 
-        yValues.each { y ->
-            sum += portee.compare(y)
-        }
-
-        if (sum == (-1 * yValues.size())) {
-            // The note is above the portee
-            System.err.println("Sum=${sum} -> Note above the portee")
-        } else if (sum == (+1 * yValues.size())) {
-            // The note is under the portee
-            note.type = portee.note
-
-            System.err.println("Sum=${sum} -> Note under the portee")
-        } else {
-            // The note is on the portee
-            System.err.println("Sum=${sum} -> Note on the portee")
+        switch (location) {
+            case Location.ABOVE:
+                System.err.println("Note above the portee (${portee.note})")
+                break
+            case Location.BELOW:
+                System.err.println("Note below the portee (${portee.note})")
+                break
+            case Location.ON:
+                System.err.println("Note on the portee (${portee.note})")
+                note.type = portee.note
+                break
         }
     }
 }
