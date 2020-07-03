@@ -1,7 +1,23 @@
 package codingame
 
+class Note {
+    int startX, endX
+    Color color
+
+    @Override
+    String toString() {
+        "Note[color: ${color}, x=[${startX},${endX}]]"
+    }
+}
+
 enum Color {
     BLACK, WHITE
+
+    String symbol() {
+        // Black -> Q (Quarter)
+        // White -> H (Half)
+        (this == BLACK) ? 'Q': 'H'
+    }
 }
 
 class Portee {
@@ -177,18 +193,24 @@ dump(array)
 
 // Detect the notes by analyzing the columns
 def buffer = [] as List<Color>
+def startX = -1
+def notes = [] as List<Note>
 
 for (int x = 0; x < width; x++) {
     def encoding = encodeColumn(array, x)
 
     if (encoding.matches('W\\d+')) {
         if (buffer) {
-            if (buffer.contains(Color.WHITE)) {
-                System.err.println("Detected a white note")
-            } else {
-                System.err.println("Detected a black note")
-            }
+            def note = new Note()
+            note.startX = startX
+            note.endX = x-1
+            note.color = (buffer.contains(Color.WHITE)) ? Color.WHITE : Color.BLACK
 
+            notes << note
+
+            System.err.println("Detected a ${note.color} note in [${note.startX},${note.endX}]")
+
+            startX = -1
             buffer.clear()
         }
 
@@ -204,6 +226,10 @@ for (int x = 0; x < width; x++) {
             throw new RuntimeException("Unable to parse encoding '${encoding}'")
         }
 
+        if (startX == -1) {
+            startX = x
+        }
+
         def signature = matcher.group('signature')
 
         def color = signature.contains('W') ? Color.WHITE : Color.BLACK
@@ -213,5 +239,7 @@ for (int x = 0; x < width; x++) {
         System.err.println("Column #${x}: ${encoding} -> ${signature} (${color})")
     }
 }
+
+System.err.println("Notes: ${notes}")
 
 println "AQ DH"
