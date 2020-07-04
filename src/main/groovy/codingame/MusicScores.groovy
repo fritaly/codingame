@@ -337,6 +337,17 @@ for (int x = 0; x < width; x++) {
     }
 }
 
+// Add a 6th portee
+def portee5 = portees[4]
+def portee4 = portees[3]
+
+def portee6 = new Portee()
+portee6.note = NoteType.C
+portee6.startY = portee5.startY + (portee5.startY - portee4.startY)
+portee6.endY = portee5.endY + (portee5.endY - portee4.endY)
+
+portees << portee6
+
 System.err.println("Portees detected: ${portees}")
 
 hidePortees(portees, width, array)
