@@ -178,7 +178,9 @@ private void dump(char[][] array) {
     }
 }
 
-private void fill(String image, array, width) {
+private char[][] decode(String image, int width, int height) {
+    def array = new char[height][width]
+
     def strings = image.split(' ')
 
     def cursor = 0
@@ -193,6 +195,8 @@ private void fill(String image, array, width) {
             cursor++
         }
     }
+
+    array
 }
 
 // Encodes a given column as a string. Example: "W175", "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42"
@@ -262,17 +266,17 @@ System.err.println("${width} ${height}")
 
 input.nextLine()
 
-def array = new char[height][width]
-
 def image = input.nextLine()
 
 if (debug) {
     System.err.println("${image}")
 }
 
-fill(image, array, width)
+def array = decode(image, width, height)
 
-dump(array)
+if (debug) {
+    dump(array)
+}
 
 // Identify the indices of the 5 "portees" by encoding the columns: the first column with an encoding matching the
 // pattern "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42" is the start of the "portees"
