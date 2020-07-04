@@ -284,6 +284,13 @@ System.err.println("Searching portees ...")
 
 def portees = [] as List<Portee>
 
+// Regex pattern used for detecting the column where the 5 portees start
+// Example: "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42" where all the portees MUST have the exact same height
+def pattern1 = java.util.regex.Pattern.compile('W(\\d+) B(?<portee>\\d+) W(?<line>\\d+) B(\\2) W(\\3) B(\\2) W(\\3) B(\\2) W(\\3) B(\\2) W(\\d+)')
+
+// Regex pattern used for detecting white rows / columns
+def pattern2 = java.util.regex.Pattern.compile('W[0-9]+')
+
 for (int x = 0; x < width; x++) {
     def encoding = encodeColumn(array, x)
 
@@ -291,13 +298,11 @@ for (int x = 0; x < width; x++) {
         System.err.println("Column #${x} -> ${encoding}")
     }
 
-    if (!encoding.matches('W[0-9]+')) {
+    if (!pattern2.matcher(encoding).matches()) {
         System.err.println("Found the start of the portees")
 
         // Example: "W33 B4 W20 B4 W20 B4 W20 B4 W20 B4 W42" where all the portees MUST have the exact same height
-        def pattern = java.util.regex.Pattern.compile('W(\\d+) B(?<portee>\\d+) W(?<line>\\d+) B(\\2) W(\\3) B(\\2) W(\\3) B(\\2) W(\\3) B(\\2) W(\\d+)')
-
-        def matcher = pattern.matcher(encoding)
+        def matcher = pattern1.matcher(encoding)
 
         if (!matcher.matches()) {
             throw new RuntimeException("Unable to parse the string '${encoding}'")
@@ -347,10 +352,13 @@ def buffer = [] as List<Color>
 def startX = -1
 def notes = [] as List<Note>
 
+// Regex pattern used for removing the leading and trailing sections of an encoding
+def pattern3 = java.util.regex.Pattern.compile('(W\\d+) (?<signature>.+) (W\\d+)')
+
 for (int x = 0; x < width; x++) {
     def encoding = encodeColumn(array, x)
 
-    if (encoding.matches('W\\d+')) {
+    if (pattern2.matcher(encoding).matches()) {
         if (buffer) {
             def note = new Note()
             note.array = array
@@ -371,10 +379,7 @@ for (int x = 0; x < width; x++) {
         }
     } else {
         // Examples: "W90 B13 W73" (black note) or "W50 B2 W17 B2 W105" (white note)
-        // Remove the leading and trailing white sections
-        def pattern = java.util.regex.Pattern.compile('(W\\d+) (?<signature>.+) (W\\d+)')
-
-        def matcher = pattern.matcher(encoding)
+        def matcher = pattern3.matcher(encoding)
 
         if (!matcher.matches()) {
             throw new RuntimeException("Unable to parse encoding '${encoding}'")
