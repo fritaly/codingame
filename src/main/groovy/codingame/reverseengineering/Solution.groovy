@@ -120,8 +120,16 @@ while (true) {
 
     input.nextLine()
 
+    dump(grid)
+
     // The player can move in 4 directions
     def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
+
+    if (previousMoveDirection) {
+        // Keep going in the same direction
+        candidates.remove(previousMoveDirection)
+        candidates.add(0, previousMoveDirection)
+    }
 
     def moveDirection = null
 
@@ -132,10 +140,12 @@ while (true) {
 
         if (grid[targetPosition.y][targetPosition.x] == 'X') {
             // There is a wall in that direction, skip it
+            System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
             continue
         }
         if (visitedPositions.contains(targetPosition)) {
             // Ignore positions already visited by the player
+            System.err.println("Ignoring ${candidate} ${targetPosition} because it's been already visited")
             continue
         }
 
@@ -145,8 +155,6 @@ while (true) {
     }
 
     println moveDirection.id
-
-    dump(grid)
 
     // Save the positions for the next turn
     previousPositions = positions
