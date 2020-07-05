@@ -1,5 +1,9 @@
 package codingame.reverseengineering
 
+int manhattanDistance(Position p1, Position p2) {
+    Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y)
+}
+
 enum Direction {
     NORTH('C'), SOUTH('D'), WEST('E'), EAST('A')
 
@@ -155,26 +159,75 @@ while (true) {
 
     def moveDirection = null
 
-    // Try each direction
-    for (candidate in candidates) {
-        // Find what's on the cell in that direction
-        def targetPosition = positions[4].towards(candidate)
+    // Find if there are ghosts within 5 cells
+    def nearGhosts = []
 
-        def elementType = grid[targetPosition.y][targetPosition.x]
+    for (int i = 0; i < 4; i++) {
+        def distance = manhattanDistance(positions[i], positions[4])
 
-        if (elementType == 'X') {
-            // There is a wall in that direction, skip it
-            System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
-            continue
+        if (distance <= 5) {
+            nearGhosts << i
         }
-        if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
-            System.err.println("Ignoring ${candidate} ${targetPosition} because it's occupied by a ghost (${elementType})")
-            continue
+    }
+
+    if (nearGhosts) {
+        // Mode danger: try to maximize the distance with the ghosts nearby
+        def bestScore = 0, selection = null
+
+        for (direction in Direction.values()) {
+            def targetPosition = positions[4].towards(direction)
+
+            def elementType = grid[targetPosition.y][targetPosition.x]
+
+            if (elementType == 'X') {
+                // There is a wall in that direction, skip it
+                System.err.println("Ignoring ${direction} ${targetPosition} because it's a wall")
+                continue
+            }
+            if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
+                System.err.println("Ignoring ${direction} ${targetPosition} because it's occupied by a ghost (${elementType})")
+                continue
+            }
+
+            def score = 0
+
+            for (i in nearGhosts) {
+                score += manhattanDistance(targetPosition, positions[i])
+            }
+
+            System.err.println("${direction} -> ${score}")
+
+            if (score >= bestScore) {
+                bestScore = score
+                selection = direction
+
+                System.err.println("New best solution: ${bestScore} (${direction})")
+            }
         }
 
-        // The player can move in that direction
-        moveDirection = candidate
-        break
+        moveDirection = selection
+    } else {
+        // Mode Patrol: try each direction
+        for (candidate in candidates) {
+            // Find what's on the cell in that direction
+            def targetPosition = positions[4].towards(candidate)
+
+            def elementType = grid[targetPosition.y][targetPosition.x]
+
+            if (elementType == 'X') {
+                // There is a wall in that direction, skip it
+                System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
+                continue
+            }
+            if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
+                System.err.println("Ignoring ${candidate} ${targetPosition} because it's occupied by a ghost (${elementType})")
+                continue
+            }
+
+            // The player can move in that direction
+            moveDirection = candidate
+            break
+        }
     }
 
     println moveDirection.id
