@@ -139,21 +139,6 @@ while (true) {
 
     dump(grid)
 
-    // The player can move in 4 directions
-    def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
-
-    Collections.shuffle(candidates)
-
-    if (previousMoveDirection) {
-        // Keep going in the same direction
-        candidates.remove(previousMoveDirection)
-        candidates.add(0, previousMoveDirection)
-
-        // Backtrack as a last option
-        candidates.remove(previousMoveDirection.opposite())
-        candidates.add(previousMoveDirection.opposite())
-    }
-
     def moveDirection = null
 
     // Find if there are (moving) ghosts within 5 cells
@@ -211,7 +196,21 @@ while (true) {
 
         moveDirection = selection
     } else {
-        // Mode Patrol: try each direction
+        // Mode Patrol: try each direction. The player can move in 4 directions
+        def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
+
+        Collections.shuffle(candidates)
+
+        if (previousMoveDirection) {
+            // Keep going in the same direction
+            candidates.remove(previousMoveDirection)
+            candidates.add(0, previousMoveDirection)
+
+            // Backtrack as a last option
+            candidates.remove(previousMoveDirection.opposite())
+            candidates.add(previousMoveDirection.opposite())
+        }
+
         for (candidate in candidates) {
             // Find what's on the cell in that direction
             def targetPosition = positions[4].towards(candidate)
