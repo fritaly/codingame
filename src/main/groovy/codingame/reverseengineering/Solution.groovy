@@ -111,6 +111,9 @@ while (true) {
 
     def positions = new Position[5]
 
+    // Array recording who moved during the previous turn
+    def moved = new boolean[5]
+
     for (i = 0; i < entityCount; ++i) {
         def x = input.nextInt()
         def y = input.nextInt()
@@ -123,6 +126,8 @@ while (true) {
 
             // Erase the previous position from the map with a '.' to highlight the positions which are "traversable"
             grid[previousPosition.y][previousPosition.x] = '.'
+
+            moved[i] = (previousPosition != position)
 
             if (i == 4) {
                 if (previousPosition == position) {
@@ -159,10 +164,15 @@ while (true) {
 
     def moveDirection = null
 
-    // Find if there are ghosts within 5 cells
+    // Find if there are (moving) ghosts within 5 cells
     def nearGhosts = []
 
     for (int i = 0; i < 4; i++) {
+        if (!moved[i]) {
+            // The ghost is still, ignore it
+            continue
+        }
+
         def distance = manhattanDistance(positions[i], positions[4])
 
         if (distance <= 5) {
@@ -172,6 +182,8 @@ while (true) {
 
     if (nearGhosts) {
         // Mode danger: try to maximize the distance with the ghosts nearby
+        System.err.println("Detected ${nearGhosts.size()} ghost(s) nearby")
+
         def bestScore = 0, selection = null
 
         for (direction in Direction.values()) {
