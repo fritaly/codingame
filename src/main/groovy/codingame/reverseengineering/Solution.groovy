@@ -51,6 +51,13 @@ while (true) {
 
         positions[i] = position
 
+        if (previousPositions) {
+            def previousPosition = previousPositions[i]
+
+            // Erase the previous position from the map
+            grid[previousPosition.y][previousPosition.x] = '.'
+        }
+
         grid[y][x] = "${i+1}".charAt(0)
     }
 
