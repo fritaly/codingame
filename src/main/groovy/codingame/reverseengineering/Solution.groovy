@@ -69,7 +69,8 @@ input.nextLine()
 def grid = new char[height][width]
 
 grid.each { row ->
-    Arrays.fill(row, '.' as char)
+    // Use ' ' to render the positions which have never been used
+    Arrays.fill(row, ' ' as char)
 }
 
 // Cheating by prepopulating walls on the border of the maze
@@ -106,7 +107,7 @@ while (true) {
         if (previousPositions) {
             def previousPosition = previousPositions[i]
 
-            // Erase the previous position from the map
+            // Erase the previous position from the map with a '.' to highlight the positions which are "traversable"
             grid[previousPosition.y][previousPosition.x] = '.'
 
             if (i == 4) {
