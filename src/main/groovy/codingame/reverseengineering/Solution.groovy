@@ -39,6 +39,11 @@ class Position {
     }
 
     @Override
+    int hashCode() {
+        Objects.hash(x, y)
+    }
+
+    @Override
     boolean equals(Object obj) {
         if (obj instanceof Position) {
             return (this.x == obj.x) && (this.y == obj.y)
@@ -70,6 +75,9 @@ grid.each { row ->
 // Array storing the previous position of each entity
 def previousPositions = null
 
+// Set containing the positions already visited
+def visitedPositions = new HashSet<Position>()
+
 Direction previousMoveDirection = null
 
 while (true) {
@@ -94,6 +102,9 @@ while (true) {
             grid[previousPosition.y][previousPosition.x] = '.'
 
             if (i == 4) {
+                // Record the player's position in the history
+                visitedPositions << position
+
                 if (previousPosition == position) {
                     // The position didn't change, the player couldn't move. Mark the wall on the map. Position of the
                     // wall ?
@@ -121,6 +132,10 @@ while (true) {
 
         if (grid[targetPosition.y][targetPosition.x] == 'X') {
             // There is a wall in that direction, skip it
+            continue
+        }
+        if (visitedPositions.contains(targetPosition)) {
+            // Ignore positions already visited by the player
             continue
         }
 
