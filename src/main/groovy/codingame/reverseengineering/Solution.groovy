@@ -76,7 +76,7 @@ grid.each { row ->
 def previousPositions = null
 
 // Set containing the positions already visited
-def visitedPositions = new HashSet<Position>()
+def visitedPositions = new LinkedHashSet<Position>()
 
 Direction previousMoveDirection = null
 
@@ -104,6 +104,11 @@ while (true) {
             if (i == 4) {
                 // Record the player's position in the history
                 visitedPositions << position
+
+                if (visitedPositions.size() == 4) {
+                    // Keep only 3 previous positions
+                    visitedPositions.remove(visitedPositions.iterator().next())
+                }
 
                 if (previousPosition == position) {
                     // The position didn't change, the player couldn't move. Mark the wall on the map. Position of the
