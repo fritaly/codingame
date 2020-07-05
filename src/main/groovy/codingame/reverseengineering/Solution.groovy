@@ -130,6 +130,8 @@ while (true) {
     // The player can move in 4 directions
     def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
 
+    Collections.shuffle(candidates)
+
     if (previousMoveDirection) {
         // Keep going in the same direction
         candidates.remove(previousMoveDirection)
