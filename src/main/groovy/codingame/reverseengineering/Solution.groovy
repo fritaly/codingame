@@ -1,5 +1,15 @@
 package codingame.reverseengineering
 
+enum Direction {
+    NORTH('C'), SOUTH('D'), WEST('E'), EAST('A')
+
+    String id
+
+    Direction(String id) {
+        this.id = id
+    }
+}
+
 class Position {
     int x, y
 
@@ -8,9 +18,33 @@ class Position {
         this.y = y
     }
 
+    Position towards(Direction direction) {
+        switch (direction) {
+            case Direction.NORTH:
+                return new Position(x, y - 1)
+            case Direction.SOUTH:
+                return new Position(x, y + 1)
+            case Direction.WEST:
+                return new Position(x - 1, y)
+            case Direction.EAST:
+                return new Position(x + 1, y)
+            default:
+                throw new RuntimeException("Unexpected direction: ${direction}")
+        }
+    }
+
     @Override
     String toString() {
         "(${x}, ${y})"
+    }
+
+    @Override
+    boolean equals(Object obj) {
+        if (obj instanceof Position) {
+            return (this.x == obj.x) && (this.y == obj.y)
+        }
+
+        false
     }
 }
 
@@ -36,6 +70,8 @@ grid.each { row ->
 // Array storing the previous position of each entity
 def previousPositions = null
 
+Direction previousMoveDirection = null
+
 while (true) {
     firstInput = input.nextLine()
     secondInput = input.nextLine()
@@ -56,6 +92,16 @@ while (true) {
 
             // Erase the previous position from the map
             grid[previousPosition.y][previousPosition.x] = '.'
+
+            if (i == 4) {
+                if (previousPosition == position) {
+                    // The position didn't change, the player couldn't move. Mark the wall on the map. Position of the
+                    // wall ?
+                   def targetPosition = position.towards(previousMoveDirection)
+
+                    grid[targetPosition.y][targetPosition.x] = 'X' as char
+                }
+            }
         }
 
         grid[y][x] = "${i+1}".charAt(0)
@@ -63,10 +109,13 @@ while (true) {
 
     input.nextLine()
 
-    println 'A'
+    def moveDirection = Direction.EAST
+
+    println moveDirection.id
 
     dump(grid)
 
     // Save the positions for the next turn
     previousPositions = positions
+    previousMoveDirection = moveDirection
 }
