@@ -8,6 +8,19 @@ enum Direction {
     Direction(String id) {
         this.id = id
     }
+
+    Direction opposite() {
+        switch (this) {
+            case SOUTH:
+                return NORTH
+            case EAST:
+                return WEST
+            case WEST:
+                return EAST
+            case NORTH:
+                return SOUTH
+        }
+    }
 }
 
 class Position {
@@ -84,9 +97,6 @@ for (int y = 0; y < height; y++) {
 // Array storing the previous position of each entity
 def previousPositions = null
 
-// Set containing the positions already visited
-def visitedPositions = new LinkedHashSet<Position>()
-
 Direction previousMoveDirection = null
 
 while (true) {
@@ -111,14 +121,6 @@ while (true) {
             grid[previousPosition.y][previousPosition.x] = '.'
 
             if (i == 4) {
-                // Record the player's position in the history
-                visitedPositions << position
-
-                if (visitedPositions.size() == 4) {
-                    // Keep only 3 previous positions
-                    visitedPositions.remove(visitedPositions.iterator().next())
-                }
-
                 if (previousPosition == position) {
                     // The position didn't change, the player couldn't move. Mark the wall on the map. Position of the
                     // wall ?
@@ -145,6 +147,10 @@ while (true) {
         // Keep going in the same direction
         candidates.remove(previousMoveDirection)
         candidates.add(0, previousMoveDirection)
+
+        // Backtrack as a last option
+        candidates.remove(previousMoveDirection.opposite())
+        candidates.add(previousMoveDirection.opposite())
     }
 
     def moveDirection = null
@@ -163,11 +169,6 @@ while (true) {
         }
         if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
             System.err.println("Ignoring ${candidate} ${targetPosition} because it's occupied by a ghost (${elementType})")
-            continue
-        }
-        if (visitedPositions.contains(targetPosition)) {
-            // Ignore positions already visited by the player
-            System.err.println("Ignoring ${candidate} ${targetPosition} because it's been already visited")
             continue
         }
 
