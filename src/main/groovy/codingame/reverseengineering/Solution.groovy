@@ -109,7 +109,25 @@ while (true) {
 
     input.nextLine()
 
-    def moveDirection = Direction.EAST
+    // The player can move in 4 directions
+    def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
+
+    def moveDirection = null
+
+    // Try each direction
+    for (candidate in candidates) {
+        // Find what's on the cell in that direction
+        def targetPosition = positions[4].towards(candidate)
+
+        if (grid[targetPosition.y][targetPosition.x] == 'X') {
+            // There is a wall in that direction, skip it
+            continue
+        }
+
+        // The player can move in that direction
+        moveDirection = candidate
+        break
+    }
 
     println moveDirection.id
 
