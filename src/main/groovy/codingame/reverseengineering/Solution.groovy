@@ -90,14 +90,6 @@ grid.each { row ->
     Arrays.fill(row, ' ' as char)
 }
 
-// Cheating by prepopulating walls on the border of the maze
-Arrays.fill(grid[0], 'X' as char)
-Arrays.fill(grid[height - 1], 'X' as char)
-
-for (int y = 0; y < height; y++) {
-    grid[y][0] = grid[y][width - 1] = 'X' as char
-}
-
 // Array storing the previous position of each entity
 def previousPositions = null
 
