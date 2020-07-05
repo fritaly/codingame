@@ -138,9 +138,15 @@ while (true) {
         // Find what's on the cell in that direction
         def targetPosition = positions[4].towards(candidate)
 
-        if (grid[targetPosition.y][targetPosition.x] == 'X') {
+        def elementType = grid[targetPosition.y][targetPosition.x]
+
+        if (elementType == 'X') {
             // There is a wall in that direction, skip it
             System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
+            continue
+        }
+        if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
+            System.err.println("Ignoring ${candidate} ${targetPosition} because it's occupied by a ghost (${elementType})")
             continue
         }
         if (visitedPositions.contains(targetPosition)) {
