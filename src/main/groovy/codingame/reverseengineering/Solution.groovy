@@ -129,10 +129,10 @@ while (true) {
 
     System.err.println("${northWall} ${eastWall} ${southWall} ${westWall}")
 
-    def positions = new Position[5]
+    def positions = new Position[entityCount]
 
     // Array recording who moved during the previous turn
-    def moved = new boolean[5]
+    def moved = new boolean[entityCount]
 
     for (i = 0; i < entityCount; ++i) {
         def x = input.nextInt()
@@ -177,7 +177,7 @@ while (true) {
     // Find if there are (moving) ghosts within 5 cells
     def nearGhosts = []
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < entityCount - 1; i++) {
         if (!moved[i]) {
             // The ghost is still, ignore it
             continue
@@ -197,7 +197,7 @@ while (true) {
         def bestScore = 0, selection = null
 
         for (direction in Direction.values()) {
-            def targetPosition = positions[4].towards(direction, width, height)
+            def targetPosition = positions.last().towards(direction, width, height)
 
             def elementType = maze.charAt(targetPosition)
 
@@ -233,7 +233,7 @@ while (true) {
         def candidates = [] as List<Direction>
 
         if (northWall == '_') {
-            def target = positions[4].towards(Direction.NORTH, width, height)
+            def target = positions.last().towards(Direction.NORTH, width, height)
 
             if (!visitedPositions.contains(target)) {
                 // Favor positions never visited before
@@ -243,7 +243,7 @@ while (true) {
             }
         }
         if (eastWall == '_') {
-            def targetPosition = positions[4].towards(Direction.EAST, width, height)
+            def targetPosition = positions.last().towards(Direction.EAST, width, height)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
@@ -253,7 +253,7 @@ while (true) {
             }
         }
         if (southWall == '_') {
-            def targetPosition = positions[4].towards(Direction.SOUTH, width, height)
+            def targetPosition = positions.last().towards(Direction.SOUTH, width, height)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
@@ -263,7 +263,7 @@ while (true) {
             }
         }
         if (westWall == '_') {
-            def targetPosition = positions[4].towards(Direction.WEST, width, height)
+            def targetPosition = positions.last().towards(Direction.WEST, width, height)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
@@ -281,7 +281,7 @@ while (true) {
 
         for (candidate in candidates) {
             // Find what's on the cell in that direction
-            def targetPosition = positions[4].towards(candidate, width, height)
+            def targetPosition = positions.last().towards(candidate, width, height)
 
             def elementType = maze.charAt(targetPosition)
 
