@@ -1,9 +1,5 @@
 package codingame.reverseengineering
 
-int manhattanDistance(Position p1, Position p2) {
-    Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y)
-}
-
 enum Direction {
     NORTH('C'), SOUTH('D'), WEST('E'), EAST('A')
 
@@ -33,6 +29,10 @@ class Position {
     Position(int x, int y) {
         this.x = x
         this.y = y
+    }
+
+    int distanceTo(Position other) {
+        Math.abs(this.x - other.x) + Math.abs(this.y - other.y)
     }
 
     Position towards(Direction direction, int width, int height) {
@@ -79,7 +79,7 @@ class Maze {
         grid = new char[height][width]
 
         grid.each { row ->
-            // Use ' ' to render the positions which have never been used
+            // Use ' ' to render the positions which have never been visited
             Arrays.fill(row, ' ' as char)
         }
     }
@@ -141,7 +141,7 @@ while (true) {
 
         positions[i] = position
 
-        if (i == 4) {
+        if (i == entityCount - 1) {
             // Record all the positions already visited
             visitedPositions << position
 
@@ -183,7 +183,7 @@ while (true) {
             continue
         }
 
-        def distance = manhattanDistance(positions[i], positions[4])
+        def distance = positions[i].distanceTo(positions.last())
 
         if (distance <= 5) {
             nearGhosts << i
@@ -214,7 +214,7 @@ while (true) {
             def score = 0
 
             for (i in nearGhosts) {
-                score += manhattanDistance(targetPosition, positions[i])
+                score += targetPosition.distanceTo(positions[i])
             }
 
             System.err.println("${direction} -> ${score}")
