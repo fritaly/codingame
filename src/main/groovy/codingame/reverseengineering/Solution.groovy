@@ -35,16 +35,18 @@ class Position {
         this.y = y
     }
 
-    Position towards(Direction direction) {
+    Position towards(Direction direction, int width, int height) {
+        // The maze can contain some "shortcuts" that's why we need to know the width / height of the maze to support
+        // the use of shortcuts
         switch (direction) {
             case Direction.NORTH:
-                return new Position(x, y - 1)
+                return new Position(x, (y - 1 + height) % height)
             case Direction.SOUTH:
-                return new Position(x, y + 1)
+                return new Position(x, (y + 1) % height)
             case Direction.WEST:
-                return new Position(x - 1, y)
+                return new Position((x - 1 + width) % width, y)
             case Direction.EAST:
-                return new Position(x + 1, y)
+                return new Position((x + 1) % width, y)
             default:
                 throw new RuntimeException("Unexpected direction: ${direction}")
         }
@@ -123,10 +125,10 @@ while (true) {
         positions[i] = position
 
         if (i == 4) {
-            def northPosition = position.towards(Direction.NORTH)
-            def eastPosition = position.towards(Direction.EAST)
-            def southPosition = position.towards(Direction.SOUTH)
-            def westPosition = position.towards(Direction.WEST)
+            def northPosition = position.towards(Direction.NORTH, width, height)
+            def eastPosition = position.towards(Direction.EAST, width, height)
+            def southPosition = position.towards(Direction.SOUTH, width, height)
+            def westPosition = position.towards(Direction.WEST, width, height)
 
             if (northPosition.isValid(grid)) {
                 grid[northPosition.y][northPosition.x] = ((northWall == '#') ? 'X' : '.') as char
@@ -183,7 +185,7 @@ while (true) {
         def bestScore = 0, selection = null
 
         for (direction in Direction.values()) {
-            def targetPosition = positions[4].towards(direction)
+            def targetPosition = positions[4].towards(direction, width, height)
 
             def elementType = grid[targetPosition.y][targetPosition.x]
 
@@ -232,7 +234,7 @@ while (true) {
 
         for (candidate in candidates) {
             // Find what's on the cell in that direction
-            def targetPosition = positions[4].towards(candidate)
+            def targetPosition = positions[4].towards(candidate, width, height)
 
             def elementType = grid[targetPosition.y][targetPosition.x]
 
