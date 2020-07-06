@@ -181,15 +181,18 @@ while (true) {
             // Record all the positions already visited
             visitedPositions << position
 
-            def northPosition = maze.getPositionTowards(Direction.NORTH)
-            def eastPosition = maze.getPositionTowards(Direction.EAST)
-            def southPosition = maze.getPositionTowards(Direction.SOUTH)
-            def westPosition = maze.getPositionTowards(Direction.WEST)
-
-            maze.setChar(northPosition, ((northWall == '#') ? '#' : '.') as char)
-            maze.setChar(eastPosition, ((eastWall == '#') ? '#' : '.') as char)
-            maze.setChar(southPosition, ((southWall == '#') ? '#' : '.') as char)
-            maze.setChar(westPosition, ((westWall == '#') ? '#' : '.') as char)
+            if (northWall == '#') {
+                maze.setChar(maze.getPositionTowards(Direction.NORTH), '#' as char)
+            }
+            if (eastWall == '#') {
+                maze.setChar(maze.getPositionTowards(Direction.EAST), '#' as char)
+            }
+            if (southWall == '#') {
+                maze.setChar(maze.getPositionTowards(Direction.SOUTH), '#' as char)
+            }
+            if (westWall == '#') {
+                maze.setChar(maze.getPositionTowards(Direction.WEST), '#' as char)
+            }
         }
     }
 
@@ -222,7 +225,7 @@ while (true) {
         def bestScore = 0, selection = null
 
         for (direction in Direction.values()) {
-            def targetPosition = maze.playerPosition().towards(direction, width, height)
+            def targetPosition = maze.getPositionTowards(direction)
 
             def elementType = maze.charAt(targetPosition)
 
@@ -306,7 +309,7 @@ while (true) {
 
         for (candidate in candidates) {
             // Find what's on the cell in that direction
-            def targetPosition = maze.playerPosition().towards(candidate, width, height)
+            def targetPosition = maze.getPositionTowards(candidate)
 
             def elementType = maze.charAt(targetPosition)
 
