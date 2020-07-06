@@ -177,6 +177,47 @@ class Portee {
     }
 }
 
+private NoteType identifyType(List<Portee> portees, Note note) {
+
+    def porteesAbove = [] as List<Portee>, porteesUnder = [] as List<Portee>
+
+    NoteType result = null
+
+    for (portee in portees) {
+        def location = portee.locate(note)
+
+        switch (location) {
+            case Location.ABOVE:
+                porteesUnder << portee
+                break
+            case Location.BELOW:
+                porteesAbove << portee
+                break
+            case Location.ON:
+                result = portee.note
+                break
+        }
+
+        if (result) {
+            // Stop looping, we identified the note
+            break
+        }
+    }
+
+    if (!result) {
+        // The node is between 2 portees, identify it
+        if (porteesAbove) {
+            result = porteesAbove.last().note.noteBefore()
+        } else if (porteesUnder) {
+            result = porteesUnder.first().note.noteAfter()
+        } else {
+            throw new IllegalStateException()
+        }
+    }
+
+    result
+}
+
 private void dump(char[][] array) {
     array.each { row ->
         // Replace all the characters 'W' by '.' to make the dump easier to read
@@ -385,6 +426,7 @@ for (int x = 0; x < width; x++) {
             note.startX = startX
             note.endX = x-1
             note.color = (buffer.contains(Color.WHITE)) ? Color.WHITE : Color.BLACK
+            note.type = identifyType(portees, note)
 
             notes << note
 
@@ -411,60 +453,6 @@ for (int x = 0; x < width; x++) {
 
         if (debug) {
             System.err.println("Column #${x}: ${encoding} -> (${color})")
-        }
-    }
-}
-
-if (debug) {
-    System.err.println("Notes: ${notes}")
-}
-
-// Identify the notes from their relative position to the 5 portees
-notes.each { note ->
-    def porteesAbove = [] as List<Portee>, porteesUnder = [] as List<Portee>
-
-    for (portee in portees) {
-        def location = portee.locate(note)
-
-        switch (location) {
-            case Location.ABOVE:
-                if (debug) {
-                    System.err.println("Note above the portee (${portee.note})")
-                }
-                porteesUnder << portee
-                break
-            case Location.BELOW:
-                if (debug) {
-                    System.err.println("Note below the portee (${portee.note})")
-                }
-                porteesAbove << portee
-                break
-            case Location.ON:
-                note.type = portee.note
-                if (debug) {
-                    System.err.println("Note is ${note.type}")
-                }
-                break
-        }
-
-        if (note.type) {
-            // Stop looping, we identified the note
-            break
-        }
-    }
-
-    if (!note.type) {
-        // The node is between 2 portees, identify it
-        if (porteesAbove) {
-            note.type = porteesAbove.last().note.noteBefore()
-        } else if (porteesUnder) {
-            note.type = porteesUnder.first().note.noteAfter()
-        } else {
-            throw new IllegalStateException()
-        }
-
-        if (debug) {
-            System.err.println("Note is ${note.type}")
         }
     }
 }
