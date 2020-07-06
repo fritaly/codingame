@@ -52,11 +52,6 @@ class Position {
         }
     }
 
-    // Tells whether the position is valid
-    boolean isValid(char[][] grid) {
-        (0 <= y) && (y < grid.length) && (0 <= x) && (x < grid[0].length)
-    }
-
     @Override
     String toString() {
         "(${x}, ${y})"
@@ -77,9 +72,34 @@ class Position {
     }
 }
 
-void dump(char[][] array) {
-    array.each { row ->
-        System.err.println("${new String(row)}")
+class Maze {
+    char[][] grid
+
+    Maze(int width, int height) {
+        grid = new char[height][width]
+
+        grid.each { row ->
+            // Use ' ' to render the positions which have never been used
+            Arrays.fill(row, ' ' as char)
+        }
+    }
+
+    void setChar(Position position, char c) {
+        grid[position.y][position.x] = c
+    }
+
+    char charAt(Position position) {
+        grid[position.y][position.x]
+    }
+
+    void setChar(int x, int y, char c) {
+        grid[y][x] = c
+    }
+
+    void dump() {
+        grid.each { row ->
+            System.err.println("${new String(row)}")
+        }
     }
 }
 
@@ -90,12 +110,7 @@ def width = input.nextInt()
 def entityCount = input.nextInt()
 input.nextLine()
 
-def grid = new char[height][width]
-
-grid.each { row ->
-    // Use ' ' to render the positions which have never been used
-    Arrays.fill(row, ' ' as char)
-}
+def maze = new Maze(width, height)
 
 // Array storing the previous position of each entity
 def previousPositions = null
@@ -135,35 +150,27 @@ while (true) {
             def southPosition = position.towards(Direction.SOUTH, width, height)
             def westPosition = position.towards(Direction.WEST, width, height)
 
-            if (northPosition.isValid(grid)) {
-                grid[northPosition.y][northPosition.x] = ((northWall == '#') ? '#' : '.') as char
-            }
-            if (eastPosition.isValid(grid)) {
-                grid[eastPosition.y][eastPosition.x] = ((eastWall == '#') ? '#' : '.') as char
-            }
-            if (southPosition.isValid(grid)) {
-                grid[southPosition.y][southPosition.x] = ((southWall == '#') ? '#' : '.') as char
-            }
-            if (westPosition.isValid(grid)) {
-                grid[westPosition.y][westPosition.x] = ((westWall == '#') ? '#' : '.') as char
-            }
+            maze.setChar(northPosition, ((northWall == '#') ? '#' : '.') as char)
+            maze.setChar(eastPosition, ((eastWall == '#') ? '#' : '.') as char)
+            maze.setChar(southPosition, ((southWall == '#') ? '#' : '.') as char)
+            maze.setChar(westPosition, ((westWall == '#') ? '#' : '.') as char)
         }
 
         if (previousPositions) {
             def previousPosition = previousPositions[i]
 
             // Erase the previous position from the map with a '.' to highlight the positions which are "traversable"
-            grid[previousPosition.y][previousPosition.x] = '.'
+            maze.setChar(previousPosition, '.' as char)
 
             moved[i] = (previousPosition != position)
         }
 
-        grid[y][x] = "${i+1}".charAt(0)
+        maze.setChar(x, y, "${i+1}".charAt(0))
     }
 
     input.nextLine()
 
-    dump(grid)
+    maze.dump()
 
     def moveDirection = null
 
@@ -192,7 +199,7 @@ while (true) {
         for (direction in Direction.values()) {
             def targetPosition = positions[4].towards(direction, width, height)
 
-            def elementType = grid[targetPosition.y][targetPosition.x]
+            def elementType = maze.charAt(targetPosition)
 
             if (elementType == '#') {
                 // There is a wall in that direction, skip it
@@ -276,7 +283,7 @@ while (true) {
             // Find what's on the cell in that direction
             def targetPosition = positions[4].towards(candidate, width, height)
 
-            def elementType = grid[targetPosition.y][targetPosition.x]
+            def elementType = maze.charAt(targetPosition)
 
             if (elementType == '#') {
                 // There is a wall in that direction, skip it
