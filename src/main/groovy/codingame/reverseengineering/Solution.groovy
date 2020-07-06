@@ -102,6 +102,8 @@ def previousPositions = null
 
 Direction previousMoveDirection = null
 
+def visitedPositions = new HashSet()
+
 while (true) {
     // The logging of the following 4 properties indicate that there are indicators about the surrounding positions.
     // They indicate nearby walls !
@@ -125,6 +127,9 @@ while (true) {
         positions[i] = position
 
         if (i == 4) {
+            // Record all the positions already visited
+            visitedPositions << position
+
             def northPosition = position.towards(Direction.NORTH, width, height)
             def eastPosition = position.towards(Direction.EAST, width, height)
             def southPosition = position.towards(Direction.SOUTH, width, height)
@@ -218,16 +223,51 @@ while (true) {
         moveDirection = selection
     } else {
         // Mode Patrol: try each direction. The player can move in 4 directions
-        def candidates = [ Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH ]
+        def candidates = [] as List<Direction>
 
-        Collections.shuffle(candidates)
+        if (northWall == '_') {
+            def target = positions[4].towards(Direction.NORTH, width, height)
+
+            if (!visitedPositions.contains(target)) {
+                // Favor positions never visited before
+                candidates.add(0, Direction.NORTH)
+            } else {
+                candidates.add(Direction.NORTH)
+            }
+        }
+        if (eastWall == '_') {
+            def targetPosition = positions[4].towards(Direction.EAST, width, height)
+
+            if (!visitedPositions.contains(targetPosition)) {
+                // Favor positions never visited before
+                candidates.add(0, Direction.EAST)
+            } else {
+                candidates.add(Direction.EAST)
+            }
+        }
+        if (southWall == '_') {
+            def targetPosition = positions[4].towards(Direction.SOUTH, width, height)
+
+            if (!visitedPositions.contains(targetPosition)) {
+                // Favor positions never visited before
+                candidates.add(0, Direction.SOUTH)
+            } else {
+                candidates.add(Direction.SOUTH)
+            }
+        }
+        if (westWall == '_') {
+            def targetPosition = positions[4].towards(Direction.WEST, width, height)
+
+            if (!visitedPositions.contains(targetPosition)) {
+                // Favor positions never visited before
+                candidates.add(0, Direction.WEST)
+            } else {
+                candidates.add(Direction.WEST)
+            }
+        }
 
         if (previousMoveDirection) {
-            // Keep going in the same direction
-            candidates.remove(previousMoveDirection)
-            candidates.add(0, previousMoveDirection)
-
-            // Backtrack as a last option
+            // Backtrack as the last option !
             candidates.remove(previousMoveDirection.opposite())
             candidates.add(previousMoveDirection.opposite())
         }
