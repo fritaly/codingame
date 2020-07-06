@@ -50,6 +50,11 @@ class Position {
         }
     }
 
+    // Tells whether the position is valid
+    boolean isValid(char[][] grid) {
+        (0 <= y) && (y < grid.length) && (0 <= x) && (x < grid[0].length)
+    }
+
     @Override
     String toString() {
         "(${x}, ${y})"
@@ -97,7 +102,7 @@ Direction previousMoveDirection = null
 
 while (true) {
     // The logging of the following 4 properties indicate that there are indicators about the surrounding positions.
-    // They indicate nearby walls    !
+    // They indicate nearby walls !
     def northWall = input.nextLine()
     def eastWall = input.nextLine()
     def southWall = input.nextLine()
@@ -117,6 +122,26 @@ while (true) {
 
         positions[i] = position
 
+        if (i == 4) {
+            def northPosition = position.towards(Direction.NORTH)
+            def eastPosition = position.towards(Direction.EAST)
+            def southPosition = position.towards(Direction.SOUTH)
+            def westPosition = position.towards(Direction.WEST)
+
+            if (northPosition.isValid(grid)) {
+                grid[northPosition.y][northPosition.x] = ((northWall == '#') ? 'X' : '.') as char
+            }
+            if (eastPosition.isValid(grid)) {
+                grid[eastPosition.y][eastPosition.x] = ((eastWall == '#') ? 'X' : '.') as char
+            }
+            if (southPosition.isValid(grid)) {
+                grid[southPosition.y][southPosition.x] = ((southWall == '#') ? 'X' : '.') as char
+            }
+            if (westPosition.isValid(grid)) {
+                grid[westPosition.y][westPosition.x] = ((westWall == '#') ? 'X' : '.') as char
+            }
+        }
+
         if (previousPositions) {
             def previousPosition = previousPositions[i]
 
@@ -124,16 +149,6 @@ while (true) {
             grid[previousPosition.y][previousPosition.x] = '.'
 
             moved[i] = (previousPosition != position)
-
-            if (i == 4) {
-                if (previousPosition == position) {
-                    // The position didn't change, the player couldn't move. Mark the wall on the map. Position of the
-                    // wall ?
-                   def targetPosition = position.towards(previousMoveDirection)
-
-                    grid[targetPosition.y][targetPosition.x] = 'X' as char
-                }
-            }
         }
 
         grid[y][x] = "${i+1}".charAt(0)
