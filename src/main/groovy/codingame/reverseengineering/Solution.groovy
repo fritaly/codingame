@@ -96,10 +96,14 @@ def previousPositions = null
 Direction previousMoveDirection = null
 
 while (true) {
-    firstInput = input.nextLine()
-    secondInput = input.nextLine()
-    thirdInput = input.nextLine()
-    fourthInput = input.nextLine()
+    // The logging of the following 4 properties indicate that there are indicators about the surrounding positions.
+    // They indicate nearby walls    !
+    def northWall = input.nextLine()
+    def eastWall = input.nextLine()
+    def southWall = input.nextLine()
+    def westWall = input.nextLine()
+
+    System.err.println("${northWall} ${eastWall} ${southWall} ${westWall}")
 
     def positions = new Position[5]
 
