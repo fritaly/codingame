@@ -131,16 +131,16 @@ while (true) {
             def westPosition = position.towards(Direction.WEST, width, height)
 
             if (northPosition.isValid(grid)) {
-                grid[northPosition.y][northPosition.x] = ((northWall == '#') ? 'X' : '.') as char
+                grid[northPosition.y][northPosition.x] = ((northWall == '#') ? '#' : '.') as char
             }
             if (eastPosition.isValid(grid)) {
-                grid[eastPosition.y][eastPosition.x] = ((eastWall == '#') ? 'X' : '.') as char
+                grid[eastPosition.y][eastPosition.x] = ((eastWall == '#') ? '#' : '.') as char
             }
             if (southPosition.isValid(grid)) {
-                grid[southPosition.y][southPosition.x] = ((southWall == '#') ? 'X' : '.') as char
+                grid[southPosition.y][southPosition.x] = ((southWall == '#') ? '#' : '.') as char
             }
             if (westPosition.isValid(grid)) {
-                grid[westPosition.y][westPosition.x] = ((westWall == '#') ? 'X' : '.') as char
+                grid[westPosition.y][westPosition.x] = ((westWall == '#') ? '#' : '.') as char
             }
         }
 
@@ -189,7 +189,7 @@ while (true) {
 
             def elementType = grid[targetPosition.y][targetPosition.x]
 
-            if (elementType == 'X') {
+            if (elementType == '#') {
                 // There is a wall in that direction, skip it
                 System.err.println("Ignoring ${direction} ${targetPosition} because it's a wall")
                 continue
@@ -238,7 +238,7 @@ while (true) {
 
             def elementType = grid[targetPosition.y][targetPosition.x]
 
-            if (elementType == 'X') {
+            if (elementType == '#') {
                 // There is a wall in that direction, skip it
                 System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
                 continue
