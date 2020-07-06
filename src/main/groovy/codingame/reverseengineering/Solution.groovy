@@ -21,6 +21,15 @@ enum Direction {
                 return SOUTH
         }
     }
+
+    static List<Direction> randomValues() {
+        def source = [ Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST ]
+
+        // Shuffle the directions to make the behavior less predictable
+        Collections.shuffle(source)
+
+        source
+    }
 }
 
 class Position {
@@ -133,10 +142,6 @@ class Maze {
         grid[position.y][position.x]
     }
 
-    void setChar(int x, int y, char c) {
-        grid[y][x] = c
-    }
-
     void dump() {
         grid.each { row ->
             System.err.println("${new String(row)}")
@@ -156,6 +161,10 @@ class Cells {
         this.east = scanner.nextLine()
         this.south = scanner.nextLine()
         this.west = scanner.nextLine()
+    }
+
+    boolean isWall(Direction direction) {
+        getCell(direction) == '#'
     }
 
     String getCell(Direction direction) {
@@ -229,11 +238,6 @@ while (true) {
     def nearGhosts = []
 
     for (int i = 0; i < entityCount - 1; i++) {
-        if (!moved[i]) {
-            // The ghost is still, ignore it
-            continue
-        }
-
         def distance = maze.getPosition(i).distanceTo(maze.playerPosition())
 
         if (distance <= 5) {
@@ -283,8 +287,8 @@ while (true) {
         // Mode Patrol: try each direction. The player can move in 4 directions
         def candidates = [] as List<Direction>
 
-        for (candidate in [ Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST ]) {
-            if (cells.getCell(candidate) == '_') {
+        for (candidate in Direction.randomValues()) {
+            if (!cells.isWall(candidate)) {
                 def targetPosition = maze.getPositionTowards(candidate)
 
                 if (!visitedPositions.contains(targetPosition)) {
