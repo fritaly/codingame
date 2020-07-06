@@ -90,6 +90,14 @@ class Maze {
         previousPositions = new Position[entityCount]
     }
 
+    int getWidth() {
+        grid[0].length
+    }
+
+    int getHeight() {
+        grid.length
+    }
+
     Position playerPosition() {
         positions[-1]
     }
@@ -111,6 +119,10 @@ class Maze {
 
     Position getPosition(int index) {
         positions[index]
+    }
+
+    Position getPositionTowards(Direction direction) {
+        playerPosition().towards(direction, width, height)
     }
 
     void setChar(Position position, char c) {
@@ -169,10 +181,10 @@ while (true) {
             // Record all the positions already visited
             visitedPositions << position
 
-            def northPosition = position.towards(Direction.NORTH, width, height)
-            def eastPosition = position.towards(Direction.EAST, width, height)
-            def southPosition = position.towards(Direction.SOUTH, width, height)
-            def westPosition = position.towards(Direction.WEST, width, height)
+            def northPosition = maze.getPositionTowards(Direction.NORTH)
+            def eastPosition = maze.getPositionTowards(Direction.EAST)
+            def southPosition = maze.getPositionTowards(Direction.SOUTH)
+            def westPosition = maze.getPositionTowards(Direction.WEST)
 
             maze.setChar(northPosition, ((northWall == '#') ? '#' : '.') as char)
             maze.setChar(eastPosition, ((eastWall == '#') ? '#' : '.') as char)
@@ -246,7 +258,7 @@ while (true) {
         def candidates = [] as List<Direction>
 
         if (northWall == '_') {
-            def target = maze.playerPosition().towards(Direction.NORTH, width, height)
+            def target = maze.getPositionTowards(Direction.NORTH)
 
             if (!visitedPositions.contains(target)) {
                 // Favor positions never visited before
@@ -256,7 +268,7 @@ while (true) {
             }
         }
         if (eastWall == '_') {
-            def targetPosition = maze.playerPosition().towards(Direction.EAST, width, height)
+            def targetPosition = maze.getPositionTowards(Direction.EAST)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
@@ -266,7 +278,7 @@ while (true) {
             }
         }
         if (southWall == '_') {
-            def targetPosition = maze.playerPosition().towards(Direction.SOUTH, width, height)
+            def targetPosition = maze.getPositionTowards(Direction.SOUTH)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
@@ -276,7 +288,7 @@ while (true) {
             }
         }
         if (westWall == '_') {
-            def targetPosition = maze.playerPosition().towards(Direction.WEST, width, height)
+            def targetPosition = maze.getPositionTowards(Direction.WEST)
 
             if (!visitedPositions.contains(targetPosition)) {
                 // Favor positions never visited before
