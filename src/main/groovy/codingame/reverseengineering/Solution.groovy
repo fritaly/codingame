@@ -144,6 +144,34 @@ class Maze {
     }
 }
 
+/**
+ * Contains information about the 4 nearby cells.
+ */
+class Cells {
+
+    String north, east, south, west
+
+    Cells(Scanner scanner) {
+        this.north = scanner.nextLine()
+        this.east = scanner.nextLine()
+        this.south = scanner.nextLine()
+        this.west = scanner.nextLine()
+    }
+
+    String getCell(Direction direction) {
+        switch (direction) {
+            case Direction.NORTH:
+                return north
+            case Direction.EAST:
+                return east
+            case Direction.SOUTH:
+                return south
+            case Direction.WEST:
+                return west
+        }
+    }
+}
+
 def input = new Scanner(System.in)
 
 def height = input.nextInt()
@@ -160,12 +188,7 @@ def visitedPositions = new HashSet()
 while (true) {
     // The logging of the following 4 properties indicate that there are indicators about the surrounding positions.
     // They indicate nearby walls !
-    def northWall = input.nextLine()
-    def eastWall = input.nextLine()
-    def southWall = input.nextLine()
-    def westWall = input.nextLine()
-
-    System.err.println("${northWall} ${eastWall} ${southWall} ${westWall}")
+    def cells = new Cells(input)
 
     // Array recording who moved during the previous turn
     def moved = new boolean[entityCount]
@@ -181,16 +204,16 @@ while (true) {
             // Record all the positions already visited
             visitedPositions << position
 
-            if (northWall == '#') {
+            if (cells.north == '#') {
                 maze.setChar(maze.getPositionTowards(Direction.NORTH), '#' as char)
             }
-            if (eastWall == '#') {
+            if (cells.east == '#') {
                 maze.setChar(maze.getPositionTowards(Direction.EAST), '#' as char)
             }
-            if (southWall == '#') {
+            if (cells.south == '#') {
                 maze.setChar(maze.getPositionTowards(Direction.SOUTH), '#' as char)
             }
-            if (westWall == '#') {
+            if (cells.west == '#') {
                 maze.setChar(maze.getPositionTowards(Direction.WEST), '#' as char)
             }
         }
@@ -260,44 +283,18 @@ while (true) {
         // Mode Patrol: try each direction. The player can move in 4 directions
         def candidates = [] as List<Direction>
 
-        if (northWall == '_') {
-            def target = maze.getPositionTowards(Direction.NORTH)
+        for (candidate in [ Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST ]) {
+            if (cells.getCell(candidate) == '_') {
+                def targetPosition = maze.getPositionTowards(candidate)
 
-            if (!visitedPositions.contains(target)) {
-                // Favor positions never visited before
-                candidates.add(0, Direction.NORTH)
+                if (!visitedPositions.contains(targetPosition)) {
+                    // Favor positions never visited before
+                    candidates.add(0, candidate)
+                } else {
+                    candidates.add(candidate)
+                }
             } else {
-                candidates.add(Direction.NORTH)
-            }
-        }
-        if (eastWall == '_') {
-            def targetPosition = maze.getPositionTowards(Direction.EAST)
-
-            if (!visitedPositions.contains(targetPosition)) {
-                // Favor positions never visited before
-                candidates.add(0, Direction.EAST)
-            } else {
-                candidates.add(Direction.EAST)
-            }
-        }
-        if (southWall == '_') {
-            def targetPosition = maze.getPositionTowards(Direction.SOUTH)
-
-            if (!visitedPositions.contains(targetPosition)) {
-                // Favor positions never visited before
-                candidates.add(0, Direction.SOUTH)
-            } else {
-                candidates.add(Direction.SOUTH)
-            }
-        }
-        if (westWall == '_') {
-            def targetPosition = maze.getPositionTowards(Direction.WEST)
-
-            if (!visitedPositions.contains(targetPosition)) {
-                // Favor positions never visited before
-                candidates.add(0, Direction.WEST)
-            } else {
-                candidates.add(Direction.WEST)
+                // The cell is a wall, ignore the direction
             }
         }
 
