@@ -54,6 +54,12 @@ class Note {
         "${type.name()}${color.symbol()}"
     }
 
+    Integer getYValue() {
+        def values = getYValues()
+
+        (values.sum() / values.size())
+    }
+
     /**
      * Returns a list of integers representing the values of y where the note is the widest.
      */
@@ -134,17 +140,17 @@ class Portee {
     Location locate(Note _note) {
         assert _note
 
-        // Find all the values of y where the note is the widest
-        def yValues = _note.getYValues()
+        // Find the (average) y-value where the note is the widest
+        def yValue = _note.getYValue()
 
         // Compare each value of y and sum all the values
-        def sum = yValues.collect { y -> compare(y) }.sum()
+        def comparison = compare(yValue)
 
-        if (sum == (-1 * yValues.size())) {
-            // All the y values are above the portee
+        if (comparison == -1) {
+            // The note is above the portee
             return Location.ABOVE
-        } else if (sum == (+1 * yValues.size())) {
-            // All the y values are below the portee
+        } else if (comparison == +1) {
+            // The note is below the portee
             return Location.BELOW
         }
 
@@ -363,13 +369,16 @@ def buffer = [] as List<Color>
 def startX = -1
 def notes = [] as List<Note>
 
-// Regex pattern used for removing the leading and trailing sections of an encoding
-def pattern3 = java.util.regex.Pattern.compile('(W\\d+) (?<signature>.+) (W\\d+)')
-
 for (int x = 0; x < width; x++) {
+    // Encode each column as a string. The encoding will be "W[n]" for a completely white column, "W[n] B[n] W[n]" or
+    // "W[n] B[n] W[n] B[n] W[n]". Examples: "W90 B13 W73" (black note) or "W50 B2 W17 B2 W105" (white note)
     def encoding = encodeColumn(array, x)
 
-    if (pattern2.matcher(encoding).matches()) {
+    // Split the encoding to count the number of "segments"
+    def segments = encoding.split(' ')
+
+    if (segments.length == 1) {
+        // Only one segment -> the column is completely white (a completely black column is impossible)
         if (buffer) {
             def note = new Note()
             note.array = array
@@ -389,25 +398,19 @@ for (int x = 0; x < width; x++) {
             System.err.println("Column #${x}: [empty]")
         }
     } else {
-        // Examples: "W90 B13 W73" (black note) or "W50 B2 W17 B2 W105" (white note)
-        def matcher = pattern3.matcher(encoding)
-
-        if (!matcher.matches()) {
-            throw new RuntimeException("Unable to parse encoding '${encoding}'")
-        }
-
         if (startX == -1) {
             startX = x
         }
 
-        def signature = matcher.group('signature')
-
-        def color = signature.contains('W') ? Color.WHITE : Color.BLACK
+        // Infer the color associated to the encoding:
+        // 3 segments -> the note can be black or white
+        // 5 segments -> the note is white (cannot be black)
+        def color = (segments.length == 3) ? Color.BLACK : Color.WHITE
 
         buffer << color
 
         if (debug) {
-            System.err.println("Column #${x}: ${encoding} -> ${signature} (${color})")
+            System.err.println("Column #${x}: ${encoding} -> (${color})")
         }
     }
 }
