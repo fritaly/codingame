@@ -111,6 +111,18 @@ class Maze {
         positions[-1]
     }
 
+    boolean moved(int index) {
+        def previousPosition = previousPositions[index]
+        def position = positions[index]
+
+        if (!previousPosition || !position) {
+            return false
+        }
+
+        // The entity moved if its current position is different from the previous one
+        previousPosition != position
+    }
+
     void setPosition(int index, Position p) {
         // Backup the previous position
         previousPositions[index] = positions[index]
@@ -199,9 +211,6 @@ while (true) {
     // They indicate nearby walls !
     def cells = new Cells(input)
 
-    // Array recording who moved during the previous turn
-    def moved = new boolean[entityCount]
-
     for (i = 0; i < entityCount; ++i) {
         def x = input.nextInt()
         def y = input.nextInt()
@@ -238,10 +247,13 @@ while (true) {
     def nearGhosts = []
 
     for (int i = 0; i < entityCount - 1; i++) {
-        def distance = maze.getPosition(i).distanceTo(maze.playerPosition())
+        if (maze.moved(i)) {
+            // Ignore the ghosts which are static
+            def distance = maze.getPosition(i).distanceTo(maze.playerPosition())
 
-        if (distance <= 5) {
-            nearGhosts << i
+            if (distance <= 5) {
+                nearGhosts << i
+            }
         }
     }
 
