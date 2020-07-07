@@ -149,7 +149,7 @@ class Maze {
             setChar(previousPosition, '.' as char)
         }
 
-        setChar(p, "${index+1}".charAt(0))
+        setChar(p, "${index}".charAt(0))
     }
 
     Position getPosition(int index) {
@@ -273,9 +273,9 @@ while (true) {
 
     if (nearGhosts) {
         // Mode danger: try to maximize the distance with the ghosts nearby
-        System.err.println("Detected ${nearGhosts.size()} ghost(s) nearby")
+        System.err.println("Detected ${nearGhosts.size()} ghost(s) nearby: ${nearGhosts}")
 
-        def bestScore = 0, selection = null
+        def bestScore = Double.MAX_VALUE, selection = null
 
         for (direction in Direction.values()) {
             def targetPosition = maze.getPositionTowards(direction)
@@ -284,23 +284,34 @@ while (true) {
 
             if (elementType == '#') {
                 // There is a wall in that direction, skip it
-                System.err.println("Ignoring ${direction} ${targetPosition} because it's a wall")
+                System.err.println("Ignoring ${direction} ${targetPosition} because of a wall")
                 continue
             }
             if (maze.isGhost(targetPosition)) {
-                System.err.println("Ignoring ${direction} ${targetPosition} because it's occupied by a ghost (${elementType})")
+                System.err.println("Ignoring ${direction} ${targetPosition} because of a ghost")
                 continue
             }
 
-            def score = 0
+            System.err.println("Evaluating ${direction} ...")
+
+            double score = 0d
 
             for (i in nearGhosts) {
-                score += targetPosition.distanceTo(maze.getPosition(i))
+                def distance = targetPosition.distanceTo(maze.getPosition(i))
+
+                System.err.println("Ghost ${i} - distance = ${distance}")
+
+                if (distance == 0) {
+                    score = Double.MAX_VALUE
+                    break
+                }
+
+                score += (1 / distance)
             }
 
-            System.err.println("${direction} -> ${score}")
+            System.err.println("${direction} -> score = ${score}")
 
-            if (score >= bestScore) {
+            if (score < bestScore) {
                 bestScore = score
                 selection = direction
 
@@ -360,7 +371,12 @@ while (true) {
         }
     }
 
-    println moveDirection.id
+    if (!moveDirection) {
+        // No move direction found because we are surrounded by ghosts, print "B" which means "Don't move"
+        println 'B'
+    } else {
+        println moveDirection.id
+    }
 
     // Save the positions for the next turn
     previousMoveDirection = moveDirection
