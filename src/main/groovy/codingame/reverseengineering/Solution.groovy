@@ -99,6 +99,10 @@ class Maze {
         previousPositions = new Position[entityCount]
     }
 
+    int getEntityCount() {
+        positions.length
+    }
+
     int getWidth() {
         grid[0].length
     }
@@ -109,6 +113,16 @@ class Maze {
 
     Position playerPosition() {
         positions[-1]
+    }
+
+    boolean isGhost(Position position) {
+        def c = charAt(position)
+
+        if ((c == '.') || (c == '#') || (c == ' ') || (c == "${entityCount}")) {
+            return false
+        }
+
+        true
     }
 
     boolean moved(int index) {
@@ -273,7 +287,7 @@ while (true) {
                 System.err.println("Ignoring ${direction} ${targetPosition} because it's a wall")
                 continue
             }
-            if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
+            if (maze.isGhost(targetPosition)) {
                 System.err.println("Ignoring ${direction} ${targetPosition} because it's occupied by a ghost (${elementType})")
                 continue
             }
@@ -303,11 +317,15 @@ while (true) {
             if (!cells.isWall(candidate)) {
                 def targetPosition = maze.getPositionTowards(candidate)
 
-                if (!visitedPositions.contains(targetPosition)) {
-                    // Favor positions never visited before
-                    candidates.add(0, candidate)
+                if (!maze.isGhost(targetPosition)) {
+                    if (!visitedPositions.contains(targetPosition)) {
+                        // Favor positions never visited before
+                        candidates.add(0, candidate)
+                    } else {
+                        candidates.add(candidate)
+                    }
                 } else {
-                    candidates.add(candidate)
+                    // There is a ghost on the target position, ignore the direction
                 }
             } else {
                 // The cell is a wall, ignore the direction
@@ -331,7 +349,7 @@ while (true) {
                 System.err.println("Ignoring ${candidate} ${targetPosition} because it's a wall")
                 continue
             }
-            if ((elementType == '1') || (elementType == '2') || (elementType == '3') || (elementType == '4')) {
+            if (maze.isGhost(targetPosition)) {
                 System.err.println("Ignoring ${candidate} ${targetPosition} because it's occupied by a ghost (${elementType})")
                 continue
             }
