@@ -1,0 +1,1 @@
+Solutions for the coding challenges at [CodinGame](https://www.codingame.com/).
