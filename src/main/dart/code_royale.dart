@@ -106,24 +106,6 @@ class BuildingSite {
     return hasStructure() && isFriend() && (param1 == 0);
   }
 
-  /// Returns the cost (in gold) for training an army on this site
-  int getTrainingCost() {
-    var unitType = getTrainedUnitType();
-
-    if (unitType == null) {
-      return -1;
-    }
-
-    switch (unitType) {
-      case UnitType.KNIGHT:
-        return 80;
-      case UnitType.ARCHER:
-        return 100;
-      default:
-        throw "Unexpected unit type: ${unitType}";
-    }
-  }
-
   /// Returns the type of the unit trained on this site
   UnitType getTrainedUnitType() {
     if (hasStructure()) {
@@ -211,6 +193,22 @@ class Unit {
 
 enum UnitType {
   QUEEN, KNIGHT, ARCHER, GIANT
+}
+
+/// Returns the cost (in gold) for training a unit with the given type
+int costOf(UnitType type) {
+  assert (type != null);
+
+  switch (type) {
+    case UnitType.KNIGHT:
+      return 80;
+    case UnitType.ARCHER:
+      return 100;
+    case UnitType.GIANT:
+      return 140;
+    default:
+      throw "Unexpected unit type: ${type}";
+  }
 }
 
 UnitType getUnitType(int value) {
@@ -481,17 +479,17 @@ void main() {
       var expectedArcherCount = archers.length + archersInTraining;
       var expectedGiantCount = giants.length + giantsInTraining;
 
-      if ((expectedKnightCount <= expectedArcherCount) && (gold >= 80) && !knightBarracks2.isEmpty) {
+      if ((expectedKnightCount <= expectedArcherCount) && (gold >= costOf(UnitType.KNIGHT)) && !knightBarracks2.isEmpty) {
         var site = knightBarracks2.removeAt(0);
-        gold -= 80;
+        gold -= costOf(UnitType.KNIGHT);
         siteIds.add(site.id);
-      } else if (!archerBarracks2.isEmpty && (gold >= 100)) {
+      } else if (!archerBarracks2.isEmpty && (gold >= costOf(UnitType.ARCHER))) {
         var site = archerBarracks2.removeAt(0);
-        gold -= 100;
+        gold -= costOf(UnitType.ARCHER);
         siteIds.add(site.id);
-      } else if (!giantsBarracks2.isEmpty && (gold >= 140)) {
+      } else if (!giantsBarracks2.isEmpty && (gold >= costOf(UnitType.GIANT))) {
         var site = giantsBarracks2.removeAt(0);
-        gold -= 140;
+        gold -= costOf(UnitType.GIANT);
         siteIds.add(site.id);
       } else {
         // Running out of gold
