@@ -174,6 +174,11 @@ class Unit {
 
   Unit(this.coordinates, this.owner, this.type, this.health);
 
+  @override
+  String toString() {
+    return "Unit[type: ${type}, health: ${health}, owner: ${owner}, coordinates: ${coordinates}]";
+  }
+
   double distanceTo(BuildingSite buildingSite) {
     return coordinates.distanceTo(buildingSite.site);
   }
@@ -333,6 +338,14 @@ void main() {
     // Identify the queens
     var queen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.FRIEND));
     var enemyQueen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.ENEMY));
+
+    // Identify my own units
+    var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && (e.type != UnitType.QUEEN)).toList();
+    var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT);
+    var archers = friendlyUnits.where((e) => e.type == UnitType.ARCHER);
+
+    trace("Knights: ${knights}");
+    trace("Archers: ${archers}");
 
     if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
