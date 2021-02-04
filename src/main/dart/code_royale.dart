@@ -96,6 +96,13 @@ class BuildingSite extends Entity {
     return claimed && friendly && barracks && (param1 == 0);
   }
 
+  /// Tells whether this site is a barracks training the given type of unit
+  bool barracksOf(UnitType type) {
+    assert (type != null);
+
+    return claimed && barracks && (getTrainedUnitType() == type);
+  }
+
   /// Returns the type of the unit trained on this site
   UnitType getTrainedUnitType() {
     if (barracks && claimed) {
@@ -128,8 +135,8 @@ class BuildingSite extends Entity {
     var siteId = int.parse(inputs[0]);
     var ignore1 = int.parse(inputs[1]); // used in future leagues
     var ignore2 = int.parse(inputs[2]); // used in future leagues
-    var structureType = getStructureType(int.parse(inputs[3])); // -1 = No structure, 2 = Barracks
-    var owner = getOwner(int.parse(inputs[4])); // -1 = No structure, 0 = Friendly, 1 = Enemy
+    var structureType = structureTypeOf(int.parse(inputs[3])); // -1 = No structure, 2 = Barracks
+    var owner = ownerOf(int.parse(inputs[4])); // -1 = No structure, 0 = Friendly, 1 = Enemy
     var param1 = int.parse(inputs[5]);
     var param2 = int.parse(inputs[6]);
 
@@ -170,8 +177,8 @@ class Unit extends Entity {
 
     var x = int.parse(inputs[0]);
     var y = int.parse(inputs[1]);
-    var owner = getOwner(int.parse(inputs[2]));
-    var unitType = getUnitType(int.parse(inputs[3])); // -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
+    var owner = ownerOf(int.parse(inputs[2]));
+    var unitType = unitTypeOf(int.parse(inputs[3])); // -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
     var health = int.parse(inputs[4]);
 
     return Unit(Coordinates(x, y), owner, unitType, health);
@@ -202,7 +209,7 @@ int costOf(UnitType type) {
   }
 }
 
-UnitType getUnitType(int value) {
+UnitType unitTypeOf(int value) {
   switch (value) {
     case -1:
       return UnitType.QUEEN;
@@ -225,7 +232,7 @@ enum StructureType {
   NONE, BARRACKS, TOWER
 }
 
-StructureType getStructureType(int value) {
+StructureType structureTypeOf(int value) {
   switch (value) {
     case -1:
       return StructureType.NONE;
@@ -246,7 +253,7 @@ enum Owner {
   FRIEND, ENEMY
 }
 
-Owner getOwner(int value) {
+Owner ownerOf(int value) {
   switch (value) {
     case -1:
       // No structure
@@ -325,24 +332,15 @@ void main() {
 
     // Identify my own barracks
     var friendlyBarracks = buildingSites.values.where((e) => e.claimed && e.friendly && e.barracks).toList();
-    var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
-    var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
-    var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
+    var knightBarracks = friendlyBarracks.where((e) => e.barracksOf(UnitType.KNIGHT)).toList();
+    var archerBarracks = friendlyBarracks.where((e) => e.barracksOf(UnitType.ARCHER)).toList();
+    var giantBarracks = friendlyBarracks.where((e) => e.barracksOf(UnitType.GIANT)).toList();
     var towers = buildingSites.values.where((e) => e.claimed && e.friendly && e.tower).toList();
 
     trace("Knight barracks: ${knightBarracks}");
     trace("Archer barracks: ${archerBarracks}");
     trace("Giant barracks: ${giantBarracks}");
     trace("Towers: ${towers}");
-
-    // Identify the queens
-    var queen = units.singleWhere((e) => e.queen && e.friendly);
-    var enemyQueen = units.singleWhere((e) => e.queen && e.enemy);
-
-    // Store the queen's start position
-    if (startPosition == null) {
-      startPosition = queen.coordinates;
-    }
 
     // Identify my own units
     var friendlyUnits = units.where((e) => e.friendly && !e.queen).toList();
@@ -364,7 +362,38 @@ void main() {
     trace("Enemy archers: ${enemyArchers}");
     trace("Enemy giants: ${enemyArchers}");
 
-    if (touchedSiteId != -1) {
+    // Identify the queens
+    var queen = units.singleWhere((e) => e.queen && e.friendly);
+    var enemyQueen = units.singleWhere((e) => e.queen && e.enemy);
+
+    // Store the queen's start position
+    if (startPosition == null) {
+      startPosition = queen.coordinates;
+    }
+
+    // Identify the enemy units near the queen
+    var nearbyEnemies = enemyUnits.where((e) => queen.distanceTo(e) < 300).toList();
+
+    trace("Nearby enemies: ${nearbyEnemies}");
+
+    if (!nearbyEnemies.isEmpty) {
+      // The queen is under attack
+      var nearestTowers = List.from(towers);
+
+      nearestTowers.sort((a, b) => queen.distanceTo(a).compareTo(queen.distanceTo(b)));
+
+      trace("Nearest towers: ${nearestTowers}");
+
+      if (nearestTowers.isEmpty) {
+        // No tower available !
+        print('WAIT'); // TODO Handle this use case
+      } else {
+        // Flee to the closest tower
+        var nearestTower = nearestTowers[0];
+
+        print('MOVE ${nearestTower.x} ${nearestTower.y}');
+      }
+    } else if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
       var touchedSite = buildingSites[touchedSiteId];
 
@@ -374,22 +403,21 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        // We should have 1/3 knights, 1/3 giants and 1/3 towers (no archer needed)
-        var total = knightBarracks.length + giantBarracks.length + towers.length;
-        var threshold = 1 / 3;
+        var total = knightBarracks.length + giantBarracks.length + towers.length + archerBarracks.length;
+        var knightRatio = 2 / 6, giantRatio = 1 / 6, towerRatio = 2 / 6, archerRatio = 1 / 6;
 
-        if ((total == 0) || (knightBarracks.length / total < threshold)) {
+        if ((total == 0) || (knightBarracks.length / total < knightRatio)) {
           // Start with knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-        } else if (towers.length / total < threshold) {
+        } else if (towers.length / total < towerRatio) {
           print('BUILD ${touchedSiteId} TOWER');
-        } else if (giantBarracks.length / total < threshold) {
+        } else if (giantBarracks.length / total < giantRatio) {
           print('BUILD ${touchedSiteId} BARRACKS-GIANT');
+        } else if (archerBarracks.length / total < archerRatio) {
+          print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
         } else {
-          // We have the same ratio for the 3 types of structures, build a barracks for knights
+          // Unable to decide, build a barracks for knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-
-          // throw "Unexpected situation: total=${total}, knight barracks=${knightBarracks.length}, giant barracks=${giantBarracks.length}, towers=${towers.length}";
         }
       } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
@@ -455,9 +483,9 @@ void main() {
     trace("Barracks: ${barracks}");
 
     // Dispatch the barracks per unit type
-    var archerBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
-    var knightBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
-    var giantsBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
+    var archerBarracks2 = barracks.where((e) => e.barracksOf(UnitType.ARCHER)).toList();
+    var knightBarracks2 = barracks.where((e) => e.barracksOf(UnitType.KNIGHT)).toList();
+    var giantsBarracks2 = barracks.where((e) => e.barracksOf(UnitType.GIANT)).toList();
 
     trace("Archer barracks (2): ${archerBarracks2}");
     trace("Knight barracks (2): ${knightBarracks2}");
@@ -465,16 +493,10 @@ void main() {
 
     var siteIds = <int>[];
 
-    var knightsInTraining = 0, archersInTraining = 0, giantsInTraining = 0;
-
     // Try to train armies based on the remaining gold and available sites
     while (true) {
-      // Should we train knights or archers ?
-      var expectedKnightCount = knights.length + knightsInTraining;
-      var expectedArcherCount = archers.length + archersInTraining;
-      var expectedGiantCount = giants.length + giantsInTraining;
-
-      if ((expectedKnightCount <= expectedArcherCount) && (gold >= costOf(UnitType.KNIGHT)) && !knightBarracks2.isEmpty) {
+      // What kind of unit should we train ?
+      if ((gold >= costOf(UnitType.KNIGHT)) && !knightBarracks2.isEmpty) {
         var site = knightBarracks2.removeAt(0);
         gold -= costOf(UnitType.KNIGHT);
         siteIds.add(site.id);
