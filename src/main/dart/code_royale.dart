@@ -335,14 +335,22 @@ void main() {
       units.add(Unit.from(stdin));
     }
 
+    // Identify my own barracks
+    var friendlyBarracks = buildingSites.values.where((e) => e.hasStructure() && e.isFriend()).toList();
+    var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
+    var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
+
+    trace("Knight barracks: ${knightBarracks}");
+    trace("Archer barracks: ${archerBarracks}");
+
     // Identify the queens
     var queen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.FRIEND));
     var enemyQueen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.ENEMY));
 
     // Identify my own units
     var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && (e.type != UnitType.QUEEN)).toList();
-    var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT);
-    var archers = friendlyUnits.where((e) => e.type == UnitType.ARCHER);
+    var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
+    var archers = friendlyUnits.where((e) => e.type == UnitType.ARCHER).toList();
 
     trace("Knights: ${knights}");
     trace("Archers: ${archers}");
