@@ -365,8 +365,12 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building barracks ...");
 
-        // TODO Decide the type of the barracks to build
-        print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
+        if (knightBarracks.length <= archerBarracks.length) {
+          // Favor the build of knight barracks
+          print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
+        } else {
+          print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
+        }
       } else if (touchedSite.isFriend()) {
         // The site is already owned (by me). Move to another empty one
         trace("The site is friendly, searching new site ...");
@@ -380,7 +384,6 @@ void main() {
 
         var nearestSite = nearestSites[0];
 
-        // print('BUILD ${nearestSite.id} BARRACKS-KNIGHT');
         print('MOVE ${nearestSite.x} ${nearestSite.y}');
       } else if (touchedSite.isEnemy()) {
         // The queen will destroy the site
