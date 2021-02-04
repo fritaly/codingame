@@ -19,16 +19,21 @@ class Coordinates {
     return sqrt(dx * dx + dy * dy);
   }
 
-  double distanceTo(Site site) {
-    assert (site != null);
-
-    // Take into account the site's radius. Ensure the value returned isn't negative
-    return max(0, distance(site.coordinates) - site.radius);
-  }
-
   @override
   String toString() {
     return "(${x},${y})";
+  }
+}
+
+abstract class Entity {
+  final Coordinates _coordinates;
+
+  Entity(this._coordinates);
+
+  Coordinates get coordinates => _coordinates;
+
+  double distanceTo(Entity target) {
+    return this._coordinates.distance(target._coordinates);
   }
 }
 
@@ -36,12 +41,11 @@ class Coordinates {
 // === Site === //
 // ============ //
 
-class Site {
+class Site extends Entity {
   final int id;
-  final Coordinates coordinates;
   final int radius;
 
-  Site(this.id, this.coordinates, this.radius);
+  Site(this.id, Coordinates coordinates, this.radius): super(coordinates);
 
   @override
   String toString() {
@@ -53,7 +57,7 @@ class Site {
 // === Building Site === //
 // ===================== //
 
-class BuildingSite {
+class BuildingSite extends Entity {
   final int id;
   final StructureType type;
   final Owner owner; // null if no owner
@@ -70,9 +74,7 @@ class BuildingSite {
   /// de chevaliers, 1 pour une caserne d'archers, 2 pour une caserne de géants.
   final int param2;
 
-  final Site site;
-
-  BuildingSite(this.id, this.type, this.owner, this.param1, this.param2, this.site);
+  BuildingSite(this.id, this.type, this.owner, this.param1, this.param2, Coordinates coordinates): super(coordinates);
 
   @override
   String toString() {
@@ -113,10 +115,8 @@ class BuildingSite {
     return null;
   }
 
-  Coordinates get coordinates => site.coordinates;
   int get x => coordinates.x;
   int get y => coordinates.y;
-  int get radius => site.radius;
 
   factory BuildingSite.from(Stdin stdin, Map<int, Site> sitesById) {
     assert (stdin != null);
@@ -133,7 +133,7 @@ class BuildingSite {
     var param1 = int.parse(inputs[5]);
     var param2 = int.parse(inputs[6]);
 
-    return BuildingSite(siteId, structureType, owner, param1, param2, sitesById[siteId]);
+    return BuildingSite(siteId, structureType, owner, param1, param2, sitesById[siteId].coordinates);
   }
 }
 
@@ -141,13 +141,12 @@ class BuildingSite {
 // === Unit === //
 // ============ //
 
-class Unit {
-  final Coordinates coordinates;
+class Unit extends Entity {
   final Owner owner;
   final UnitType type;
   final int health;
 
-  Unit(this.coordinates, this.owner, this.type, this.health);
+  Unit(Coordinates coordinates, this.owner, this.type, this.health): super(coordinates);
 
   bool get queen => type == UnitType.QUEEN;
   bool get knight => type == UnitType.KNIGHT;
@@ -160,10 +159,6 @@ class Unit {
   @override
   String toString() {
     return "Unit[type: ${type}, health: ${health}, owner: ${owner}, coordinates: ${coordinates}]";
-  }
-
-  double distanceTo(BuildingSite buildingSite) {
-    return coordinates.distanceTo(buildingSite.site);
   }
 
   factory Unit.from(Stdin stdin) {
@@ -405,7 +400,7 @@ void main() {
 
         // Sort the sites based on their distance from the queen's start position
         // This ensures the queen doesn't wander towards the enemy's territory
-        nearestSites.sort((a, b) => startPosition.distanceTo(a.site).compareTo(startPosition.distanceTo(b.site)));
+        nearestSites.sort((a, b) => startPosition.distance(a.coordinates).compareTo(startPosition.distance(b.coordinates)));
 
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
