@@ -392,6 +392,9 @@ void main() {
         .where((e) => e.isFriend() && e.hasStructure() && e.isAvailableForTraining())
         .toList();
 
+    // Favor the barracks closest to the enemy queen to train armies
+    barracks.sort((a, b) => enemyQueen.distanceTo(a).compareTo(enemyQueen.distanceTo(b)));
+
     trace("Barracks: ${barracks}");
 
     var siteIds = <int>[];
