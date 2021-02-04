@@ -300,9 +300,12 @@ void main() {
     sitesById[siteId] = Site(siteId, Coordinates(x, y), radius);
   }
 
-  // game loop
+  // The coordinates where the queen appeared on the map
+  Coordinates startPosition;
+
   var round = 1;
 
+  // Game loop
   while (true) {
     var message = "### Round ${round++} ###";
 
@@ -347,6 +350,11 @@ void main() {
     var queen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.FRIEND));
     var enemyQueen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.ENEMY));
 
+    // Store the queen's start position
+    if (startPosition == null) {
+      startPosition = queen.coordinates;
+    }
+
     // Identify my own units
     var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && (e.type != UnitType.QUEEN)).toList();
     var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
@@ -354,6 +362,14 @@ void main() {
 
     trace("Knights: ${knights}");
     trace("Archers: ${archers}");
+
+    // Identify the enemy units
+    var enemyUnits = units.where((e) => (e.owner == Owner.ENEMY) && (e.type != UnitType.QUEEN)).toList();
+    var enemyKnights = enemyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
+    var enemyArchers = enemyUnits.where((e) => e.type == UnitType.ARCHER).toList();
+
+    trace("Enemy knights: ${enemyKnights}");
+    trace("Enemy archers: ${enemyArchers}");
 
     if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
@@ -392,20 +408,29 @@ void main() {
         print('WAIT');
       }
     } else {
-      // The queen is not touching a site, find the nearest empty site
-      trace("The queen isn't touching a site, searching destination ...");
+      // The queen is not touching a site
 
-      // Identify the nearest empty sites
-      var nearestSites = buildingSites.values.where((element) => (element.owner == null)).toList();
+      if (friendlyBarracks.length >= 5) {
+        // Don't build more than 5 barracks and enter escape mode by returning
+        // to the start position
+        print('MOVE ${startPosition.x} ${startPosition.y}');
 
-      nearestSites.sort((a, b) => queen.distanceTo(a).compareTo(queen.distanceTo(b)));
+      } else {
+        // The queen is not touching a site, find the nearest empty site
+        trace("The queen isn't touching a site, searching destination ...");
 
-      trace("Nearest sites:\n${nearestSites.join('\n')}");
+        // Identify the nearest empty sites
+        var nearestSites = buildingSites.values.where((element) => (element.owner == null)).toList();
 
-      var nearestSite = nearestSites[0];
+        nearestSites.sort((a, b) => queen.distanceTo(a).compareTo(queen.distanceTo(b)));
 
-      // print('BUILD ${nearestSite.id} BARRACKS-KNIGHT');
-      print('MOVE ${nearestSite.x} ${nearestSite.y}');
+        trace("Nearest sites:\n${nearestSites.join('\n')}");
+
+        var nearestSite = nearestSites[0];
+
+        // print('BUILD ${nearestSite.id} BARRACKS-KNIGHT');
+        print('MOVE ${nearestSite.x} ${nearestSite.y}');
+      }
     }
 
     // First line: A valid queen action
