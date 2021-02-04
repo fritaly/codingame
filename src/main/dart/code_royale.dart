@@ -265,24 +265,6 @@ Owner getOwner(int value) {
   }
 }
 
-// ============= //
-// === Queen === //
-// ============= //
-
-class Queen {
-  int get radius => 30;
-
-  // Maximum distance per turn (1 turn = 60, 2 turns = 120, etc)
-  int get speed => 60;
-
-  int distance(int turns) {
-    assert (turns >= 1);
-
-    return turns * speed;
-  }
-}
-
-
 void main() {
   var numSites = int.parse(stdin.readLineSync());
 
