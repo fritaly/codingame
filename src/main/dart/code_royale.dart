@@ -421,13 +421,34 @@ void main() {
 
     trace("Barracks: ${barracks}");
 
+    // Dispatch the barracks per unit type
+    var archerBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
+    var knightBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
+
+    trace("Archer barracks (2): ${archerBarracks2}");
+    trace("Knight barracks (2): ${knightBarracks2}");
+
     var siteIds = <int>[];
 
+    var knightsInTraining = 0, archersInTraining = 0;
+
     // Try to train armies based on the remaining gold and available sites
-    for (var site in barracks) {
-      if (site.getTrainingCost() <= gold) {
+    while (true) {
+      // Should we train knights or archers ?
+      var expectedKnightCount = knights.length + knightsInTraining;
+      var expectedArcherCount = archers.length + archersInTraining;
+
+      if ((expectedKnightCount <= expectedArcherCount) && (gold >= 80) && !knightBarracks2.isEmpty) {
+        var site = knightBarracks2.removeAt(0);
+        gold -= 80;
         siteIds.add(site.id);
-        gold -= site.getTrainingCost();
+      } else if (!archerBarracks2.isEmpty && (gold >= 100)) {
+        var site = archerBarracks2.removeAt(0);
+        gold -= 100;
+        siteIds.add(site.id);
+      } else {
+        // Running out of gold
+        break;
       }
     }
 
