@@ -58,13 +58,16 @@ class BuildingSite {
   final StructureType structureType;
   final Owner owner; // null if no owner
 
+  /// Quand il n'y a pas de bâtiment construit : -1
+  /// Si c'est une tour, son nombre de points de vie restants.
   /// Si c'est une caserne, le nombre de tours restant avant que la caserne
-  /// puisse à nouveau lancer un cycle d'entraînement d'armées, 0 si elle est
-  /// disponible.
+  /// puisse à nouveau lancer un cycle d'entraînement d'armées, 0 si elle est disponible.
   final int param1;
 
+  /// Quand il n'y a pas de bâtiment construit : -1
+  /// Si c'est une tour, son rayon de portée
   /// Si c'est une caserne, le type d'armée qu'elle produit 0 pour une caserne
-  /// de chevaliers, 1 pour une caserne d'archers.
+  /// de chevaliers, 1 pour une caserne d'archers, 2 pour une caserne de géants.
   final int param2;
 
   final Site site;
@@ -129,6 +132,8 @@ class BuildingSite {
           return UnitType.KNIGHT;
         case 1:
           return UnitType.ARCHER;
+        case 2:
+          return UnitType.GIANT;
         default:
           throw "Unexpected value: ${param2}";
       }
@@ -205,7 +210,7 @@ class Unit {
 // ================= //
 
 enum UnitType {
-  QUEEN, KNIGHT, ARCHER
+  QUEEN, KNIGHT, ARCHER, GIANT
 }
 
 UnitType getUnitType(int value) {
@@ -226,13 +231,15 @@ UnitType getUnitType(int value) {
 // ====================== //
 
 enum StructureType {
-  NONE, BARRACKS
+  NONE, BARRACKS, TOWER
 }
 
 StructureType getStructureType(int value) {
   switch (value) {
     case -1:
       return StructureType.NONE;
+    case 1:
+      return StructureType.TOWER;
     case 2:
       return StructureType.BARRACKS;
     default:
@@ -320,7 +327,12 @@ void main() {
     trace("${inputs.join(' ')}");
 
     var gold = int.parse(inputs[0]);
-    var touchedSiteId = int.parse(inputs[1]); // -1 if none
+
+    trace("${gold}");
+
+    var touchedSiteId = int.parse(inputs[1]);
+
+    trace("${touchedSiteId}");
 
     var buildingSites = Map<int, BuildingSite>();
 
@@ -342,9 +354,11 @@ void main() {
     var friendlyBarracks = buildingSites.values.where((e) => e.hasStructure() && e.isFriend()).toList();
     var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
     var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
+    var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
 
     trace("Knight barracks: ${knightBarracks}");
     trace("Archer barracks: ${archerBarracks}");
+    trace("Giant barracks: ${giantBarracks}");
 
     // Identify the queens
     var queen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.FRIEND));
@@ -359,17 +373,21 @@ void main() {
     var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && (e.type != UnitType.QUEEN)).toList();
     var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
     var archers = friendlyUnits.where((e) => e.type == UnitType.ARCHER).toList();
+    var giants = friendlyUnits.where((e) => e.type == UnitType.GIANT).toList();
 
     trace("Knights: ${knights}");
     trace("Archers: ${archers}");
+    trace("Giants: ${giants}");
 
     // Identify the enemy units
     var enemyUnits = units.where((e) => (e.owner == Owner.ENEMY) && (e.type != UnitType.QUEEN)).toList();
     var enemyKnights = enemyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
     var enemyArchers = enemyUnits.where((e) => e.type == UnitType.ARCHER).toList();
+    var enemyGiants = enemyUnits.where((e) => e.type == UnitType.GIANT).toList();
 
     trace("Enemy knights: ${enemyKnights}");
     trace("Enemy archers: ${enemyArchers}");
+    trace("Enemy giants: ${enemyArchers}");
 
     if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
@@ -381,6 +399,7 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building barracks ...");
 
+        // TODO Support giants
         if (knightBarracks.length <= archerBarracks.length) {
           // Favor the build of knight barracks
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
@@ -428,13 +447,9 @@ void main() {
 
         var nearestSite = nearestSites[0];
 
-        // print('BUILD ${nearestSite.id} BARRACKS-KNIGHT');
         print('MOVE ${nearestSite.x} ${nearestSite.y}');
       }
     }
-
-    // First line: A valid queen action
-    // Second line: A set of training instructions
 
     // Identify the barracks where I can train an army
     var barracks = buildingSites.values
@@ -449,19 +464,22 @@ void main() {
     // Dispatch the barracks per unit type
     var archerBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
     var knightBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
+    var giantsBarracks2 = barracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
 
     trace("Archer barracks (2): ${archerBarracks2}");
     trace("Knight barracks (2): ${knightBarracks2}");
+    trace("Giant barracks (2): ${giantsBarracks2}");
 
     var siteIds = <int>[];
 
-    var knightsInTraining = 0, archersInTraining = 0;
+    var knightsInTraining = 0, archersInTraining = 0, giantsInTraining = 0;
 
     // Try to train armies based on the remaining gold and available sites
     while (true) {
       // Should we train knights or archers ?
       var expectedKnightCount = knights.length + knightsInTraining;
       var expectedArcherCount = archers.length + archersInTraining;
+      var expectedGiantCount = giants.length + giantsInTraining;
 
       if ((expectedKnightCount <= expectedArcherCount) && (gold >= 80) && !knightBarracks2.isEmpty) {
         var site = knightBarracks2.removeAt(0);
@@ -470,6 +488,10 @@ void main() {
       } else if (!archerBarracks2.isEmpty && (gold >= 100)) {
         var site = archerBarracks2.removeAt(0);
         gold -= 100;
+        siteIds.add(site.id);
+      } else if (!giantsBarracks2.isEmpty && (gold >= 140)) {
+        var site = giantsBarracks2.removeAt(0);
+        gold -= 140;
         siteIds.add(site.id);
       } else {
         // Running out of gold
