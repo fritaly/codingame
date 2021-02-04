@@ -55,7 +55,7 @@ class Site {
 
 class BuildingSite {
   final int id;
-  final StructureType structureType;
+  final StructureType type;
   final Owner owner; // null if no owner
 
   /// Quand il n'y a pas de bâtiment construit : -1
@@ -72,22 +72,22 @@ class BuildingSite {
 
   final Site site;
 
-  BuildingSite(this.id, this.structureType, this.owner, this.param1, this.param2, this.site);
+  BuildingSite(this.id, this.type, this.owner, this.param1, this.param2, this.site);
 
   @override
   String toString() {
-    return "BuildingSite[id: ${id}, type: ${structureType}, owner: ${owner}, coordinates: ${coordinates}]";
+    return "BuildingSite[id: ${id}, type: ${type}, owner: ${owner}, coordinates: ${coordinates}]";
   }
 
   /// Tells whether the site has been claimed
-  bool get claimed => (structureType != StructureType.NONE);
+  bool get claimed => (type != StructureType.NONE);
 
   bool get neutral => (owner == null);
   bool get friendly => (owner == Owner.FRIEND);
   bool get enemy => (owner == Owner.ENEMY);
 
-  bool get barracks => structureType == StructureType.BARRACKS;
-  bool get tower => structureType == StructureType.TOWER;
+  bool get barracks => type == StructureType.BARRACKS;
+  bool get tower => type == StructureType.TOWER;
 
   /// Tells whether the site is available for training an army immediately
   bool isAvailableForTraining() {
