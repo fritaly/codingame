@@ -166,6 +166,9 @@ class Unit {
   bool get archer => type == UnitType.ARCHER;
   bool get giant => type == UnitType.GIANT;
 
+  bool get friendly => owner == Owner.FRIEND;
+  bool get enemy => owner == Owner.ENEMY;
+
   @override
   String toString() {
     return "Unit[type: ${type}, health: ${health}, owner: ${owner}, coordinates: ${coordinates}]";
@@ -364,8 +367,8 @@ void main() {
     trace("Giant barracks: ${giantBarracks}");
 
     // Identify the queens
-    var queen = units.singleWhere((e) => e.queen && (e.owner == Owner.FRIEND));
-    var enemyQueen = units.singleWhere((e) => e.queen && (e.owner == Owner.ENEMY));
+    var queen = units.singleWhere((e) => e.queen && e.friendly);
+    var enemyQueen = units.singleWhere((e) => e.queen && e.enemy);
 
     // Store the queen's start position
     if (startPosition == null) {
@@ -373,7 +376,7 @@ void main() {
     }
 
     // Identify my own units
-    var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && !e.queen).toList();
+    var friendlyUnits = units.where((e) => e.friendly && !e.queen).toList();
     var knights = friendlyUnits.where((e) => e.knight).toList();
     var archers = friendlyUnits.where((e) => e.archer).toList();
     var giants = friendlyUnits.where((e) => e.giant).toList();
@@ -383,7 +386,7 @@ void main() {
     trace("Giants: ${giants}");
 
     // Identify the enemy units
-    var enemyUnits = units.where((e) => (e.owner == Owner.ENEMY) && !e.queen).toList();
+    var enemyUnits = units.where((e) => e.enemy && !e.queen).toList();
     var enemyKnights = enemyUnits.where((e) => e.knight).toList();
     var enemyArchers = enemyUnits.where((e) => e.archer).toList();
     var enemyGiants = enemyUnits.where((e) => e.giant).toList();
