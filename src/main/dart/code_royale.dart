@@ -215,6 +215,8 @@ UnitType getUnitType(int value) {
       return UnitType.KNIGHT;
     case 1:
       return UnitType.ARCHER;
+    case 2:
+      return UnitType.GIANT;
     default:
       throw "Unexpected unit type: ${value}";
   }
@@ -349,12 +351,12 @@ void main() {
     var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
     var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
     var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
-    var friendlyTowers = buildingSites.values.where((e) => e.claimed && e.friendly && e.tower).toList();
+    var towers = buildingSites.values.where((e) => e.claimed && e.friendly && e.tower).toList();
 
     trace("Knight barracks: ${knightBarracks}");
     trace("Archer barracks: ${archerBarracks}");
     trace("Giant barracks: ${giantBarracks}");
-    trace("Towers: ${friendlyTowers}");
+    trace("Towers: ${towers}");
 
     // Identify the queens
     var queen = units.singleWhere((e) => e.queen && e.friendly);
@@ -393,15 +395,24 @@ void main() {
 
       if (touchedSite.neutral) {
         // No building, create one on the site
-        trace("The site is neutral, building barracks ...");
+        trace("The site is neutral, building structure ...");
 
-        // TODO Support giants and towers
-        if (knightBarracks.length <= archerBarracks.length) {
-          // Favor the build of knight barracks
+        // We should have 1/3 knights, 1/3 giants and 1/3 towers (no archer needed)
+        var total = knightBarracks.length + giantBarracks.length + towers.length;
+        var threshold = 1 / 3;
+
+        if ((total == 0) || (knightBarracks.length / total < threshold)) {
+          // Start with knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-        } else {
-          // TODO Build archer barracks
+        } else if (towers.length / total < threshold) {
           print('BUILD ${touchedSiteId} TOWER');
+        } else if (giantBarracks.length / total < threshold) {
+          print('BUILD ${touchedSiteId} BARRACKS-GIANT');
+        } else {
+          // We have the same ratio for the 3 types of structures, build a barracks for knights
+          print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
+
+          // throw "Unexpected situation: total=${total}, knight barracks=${knightBarracks.length}, giant barracks=${giantBarracks.length}, towers=${towers.length}";
         }
       } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
@@ -414,9 +425,14 @@ void main() {
 
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
-        var nearestSite = nearestSites[0];
+        if (nearestSites.isEmpty) {
+          // No empty site available, return to the start position
+          print('MOVE ${startPosition.x} ${startPosition.y}');
+        } else {
+          var nearestSite = nearestSites[0];
 
-        print('MOVE ${nearestSite.x} ${nearestSite.y}');
+          print('MOVE ${nearestSite.x} ${nearestSite.y}');
+        }
       } else if (touchedSite.enemy) {
         // The queen will destroy the site
         trace("The site is enemy, destroying building ...");
