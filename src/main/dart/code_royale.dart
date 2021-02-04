@@ -161,6 +161,11 @@ class Unit {
 
   Unit(this.coordinates, this.owner, this.type, this.health);
 
+  bool get queen => type == UnitType.QUEEN;
+  bool get knight => type == UnitType.KNIGHT;
+  bool get archer => type == UnitType.ARCHER;
+  bool get giant => type == UnitType.GIANT;
+
   @override
   String toString() {
     return "Unit[type: ${type}, health: ${health}, owner: ${owner}, coordinates: ${coordinates}]";
@@ -359,8 +364,8 @@ void main() {
     trace("Giant barracks: ${giantBarracks}");
 
     // Identify the queens
-    var queen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.FRIEND));
-    var enemyQueen = units.singleWhere((e) => (e.type == UnitType.QUEEN) && (e.owner == Owner.ENEMY));
+    var queen = units.singleWhere((e) => e.queen && (e.owner == Owner.FRIEND));
+    var enemyQueen = units.singleWhere((e) => e.queen && (e.owner == Owner.ENEMY));
 
     // Store the queen's start position
     if (startPosition == null) {
@@ -368,20 +373,20 @@ void main() {
     }
 
     // Identify my own units
-    var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && (e.type != UnitType.QUEEN)).toList();
-    var knights = friendlyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
-    var archers = friendlyUnits.where((e) => e.type == UnitType.ARCHER).toList();
-    var giants = friendlyUnits.where((e) => e.type == UnitType.GIANT).toList();
+    var friendlyUnits = units.where((e) => (e.owner == Owner.FRIEND) && !e.queen).toList();
+    var knights = friendlyUnits.where((e) => e.knight).toList();
+    var archers = friendlyUnits.where((e) => e.archer).toList();
+    var giants = friendlyUnits.where((e) => e.giant).toList();
 
     trace("Knights: ${knights}");
     trace("Archers: ${archers}");
     trace("Giants: ${giants}");
 
     // Identify the enemy units
-    var enemyUnits = units.where((e) => (e.owner == Owner.ENEMY) && (e.type != UnitType.QUEEN)).toList();
-    var enemyKnights = enemyUnits.where((e) => e.type == UnitType.KNIGHT).toList();
-    var enemyArchers = enemyUnits.where((e) => e.type == UnitType.ARCHER).toList();
-    var enemyGiants = enemyUnits.where((e) => e.type == UnitType.GIANT).toList();
+    var enemyUnits = units.where((e) => (e.owner == Owner.ENEMY) && !e.queen).toList();
+    var enemyKnights = enemyUnits.where((e) => e.knight).toList();
+    var enemyArchers = enemyUnits.where((e) => e.archer).toList();
+    var enemyGiants = enemyUnits.where((e) => e.giant).toList();
 
     trace("Enemy knights: ${enemyKnights}");
     trace("Enemy archers: ${enemyArchers}");
