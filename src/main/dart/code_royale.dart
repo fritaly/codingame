@@ -89,21 +89,13 @@ class BuildingSite {
     return (structureType == StructureType.NONE);
   }
 
-  bool isNeutral() {
-    return (owner == null);
-  }
-
-  bool isFriend() {
-    return (owner == Owner.FRIEND);
-  }
-
-  bool isEnemy() {
-    return (owner == Owner.ENEMY);
-  }
+  bool get neutral => (owner == null);
+  bool get friendly => (owner == Owner.FRIEND);
+  bool get enemy => (owner == Owner.ENEMY);
 
   /// Tells whether the site is available for training an army immediately
   bool isAvailableForTraining() {
-    return hasStructure() && isFriend() && (param1 == 0);
+    return hasStructure() && friendly && (param1 == 0);
   }
 
   /// Returns the type of the unit trained on this site
@@ -357,7 +349,7 @@ void main() {
     }
 
     // Identify my own barracks
-    var friendlyBarracks = buildingSites.values.where((e) => e.hasStructure() && e.isFriend()).toList();
+    var friendlyBarracks = buildingSites.values.where((e) => e.hasStructure() && e.friendly).toList();
     var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
     var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
     var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
@@ -401,7 +393,7 @@ void main() {
 
       trace("The queen is touching site ${touchedSiteId} (${touchedSite})");
 
-      if (touchedSite.isNeutral()) {
+      if (touchedSite.neutral) {
         // No building, create one on the site
         trace("The site is neutral, building barracks ...");
 
@@ -412,7 +404,7 @@ void main() {
         } else {
           print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
         }
-      } else if (touchedSite.isFriend()) {
+      } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
         trace("The site is friendly, searching new site ...");
 
@@ -426,7 +418,7 @@ void main() {
         var nearestSite = nearestSites[0];
 
         print('MOVE ${nearestSite.x} ${nearestSite.y}');
-      } else if (touchedSite.isEnemy()) {
+      } else if (touchedSite.enemy) {
         // The queen will destroy the site
         trace("The site is enemy, destroying building ...");
 
@@ -459,7 +451,7 @@ void main() {
 
     // Identify the barracks where I can train an army
     var barracks = buildingSites.values
-        .where((e) => e.isFriend() && e.hasStructure() && e.isAvailableForTraining())
+        .where((e) => e.friendly && e.hasStructure() && e.isAvailableForTraining())
         .toList();
 
     // Favor the barracks closest to the enemy queen to train armies
