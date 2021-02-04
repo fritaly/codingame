@@ -86,14 +86,17 @@ class BuildingSite {
   bool get friendly => (owner == Owner.FRIEND);
   bool get enemy => (owner == Owner.ENEMY);
 
+  bool get barracks => structureType == StructureType.BARRACKS;
+  bool get tower => structureType == StructureType.TOWER;
+
   /// Tells whether the site is available for training an army immediately
   bool isAvailableForTraining() {
-    return claimed && friendly && (param1 == 0);
+    return claimed && friendly && barracks && (param1 == 0);
   }
 
   /// Returns the type of the unit trained on this site
   UnitType getTrainedUnitType() {
-    if (claimed) {
+    if (barracks && claimed) {
       switch (param2) {
         case 0:
           return UnitType.KNIGHT;
@@ -342,14 +345,16 @@ void main() {
     }
 
     // Identify my own barracks
-    var friendlyBarracks = buildingSites.values.where((e) => e.claimed && e.friendly).toList();
+    var friendlyBarracks = buildingSites.values.where((e) => e.claimed && e.friendly && e.barracks).toList();
     var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
     var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
     var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
+    var friendlyTowers = buildingSites.values.where((e) => e.claimed && e.friendly && e.tower).toList();
 
     trace("Knight barracks: ${knightBarracks}");
     trace("Archer barracks: ${archerBarracks}");
     trace("Giant barracks: ${giantBarracks}");
+    trace("Towers: ${friendlyTowers}");
 
     // Identify the queens
     var queen = units.singleWhere((e) => e.queen && e.friendly);
@@ -390,12 +395,13 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building barracks ...");
 
-        // TODO Support giants
+        // TODO Support giants and towers
         if (knightBarracks.length <= archerBarracks.length) {
           // Favor the build of knight barracks
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
         } else {
-          print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
+          // TODO Build archer barracks
+          print('BUILD ${touchedSiteId} TOWER');
         }
       } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
@@ -423,6 +429,7 @@ void main() {
       if (friendlyBarracks.length >= 5) {
         // Don't build more than 5 barracks and enter escape mode by returning
         // to the start position
+        // TODO Send the queen next to a defensive tower
         print('MOVE ${startPosition.x} ${startPosition.y}');
 
       } else {
