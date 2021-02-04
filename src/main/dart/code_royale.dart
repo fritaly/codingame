@@ -419,9 +419,11 @@ void main() {
         trace("The site is friendly, searching new site ...");
 
         // Identify the nearest empty sites
-        var nearestSites = buildingSites.values.where((element) => (element.owner == null)).toList();
+        var nearestSites = buildingSites.values.where((e) => e.neutral).toList();
 
-        nearestSites.sort((a, b) => queen.distanceTo(a).compareTo(queen.distanceTo(b)));
+        // Sort the sites based on their distance from the queen's start position
+        // This ensures the queen doesn't wander towards the enemy's territory
+        nearestSites.sort((a, b) => startPosition.distanceTo(a.site).compareTo(startPosition.distanceTo(b.site)));
 
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
