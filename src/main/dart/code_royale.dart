@@ -79,15 +79,8 @@ class BuildingSite {
     return "BuildingSite[id: ${id}, type: ${structureType}, owner: ${owner}, coordinates: ${coordinates}]";
   }
 
-  /// Tells whether the site has a structure
-  bool hasStructure() {
-    return !isEmpty();
-  }
-
-  /// Tells whether the site is empty (it has no structure)
-  bool isEmpty() {
-    return (structureType == StructureType.NONE);
-  }
+  /// Tells whether the site has been claimed
+  bool get claimed => (structureType != StructureType.NONE);
 
   bool get neutral => (owner == null);
   bool get friendly => (owner == Owner.FRIEND);
@@ -95,12 +88,12 @@ class BuildingSite {
 
   /// Tells whether the site is available for training an army immediately
   bool isAvailableForTraining() {
-    return hasStructure() && friendly && (param1 == 0);
+    return claimed && friendly && (param1 == 0);
   }
 
   /// Returns the type of the unit trained on this site
   UnitType getTrainedUnitType() {
-    if (hasStructure()) {
+    if (claimed) {
       switch (param2) {
         case 0:
           return UnitType.KNIGHT;
@@ -349,7 +342,7 @@ void main() {
     }
 
     // Identify my own barracks
-    var friendlyBarracks = buildingSites.values.where((e) => e.hasStructure() && e.friendly).toList();
+    var friendlyBarracks = buildingSites.values.where((e) => e.claimed && e.friendly).toList();
     var knightBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.KNIGHT).toList();
     var archerBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.ARCHER).toList();
     var giantBarracks = friendlyBarracks.where((e) => e.getTrainedUnitType() == UnitType.GIANT).toList();
@@ -451,7 +444,7 @@ void main() {
 
     // Identify the barracks where I can train an army
     var barracks = buildingSites.values
-        .where((e) => e.friendly && e.hasStructure() && e.isAvailableForTraining())
+        .where((e) => e.friendly && e.claimed && e.isAvailableForTraining())
         .toList();
 
     // Favor the barracks closest to the enemy queen to train armies
