@@ -405,7 +405,7 @@ void main() {
 
     trace("Nearby enemies: ${nearbyEnemies}");
 
-    if (!nearbyEnemies.isEmpty) {
+    /* if (!nearbyEnemies.isEmpty) {
       // The queen is under attack
       var nearestTowers = List<BuildingSite>.from(towers);
       nearestTowers.sort(compareDistanceFrom(queen));
@@ -421,7 +421,7 @@ void main() {
 
         print('MOVE ${nearestTower.x} ${nearestTower.y}');
       }
-    } else if (touchedSiteId != -1) {
+    } else */ if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
       var touchedSite = buildingSites[touchedSiteId];
 
@@ -485,55 +485,67 @@ void main() {
         trace("The queen isn't touching a site, searching destination ...");
 
         // Identify the nearest empty sites
-        var nearestSites = buildingSites.values.where((e) => !e.claimed).toList();
-        nearestSites.sort(compareDistanceFrom(queen));
+        var emptySites = buildingSites.values.where((e) => !e.claimed).toList();
 
-        trace("Nearest sites:\n${nearestSites.join('\n')}");
+        trace("Nearest sites:\n${emptySites.join('\n')}");
 
-        var nearestSite = nearestSites[0];
+        if (!emptySites.isEmpty) {
+          emptySites.sort(compareDistanceFrom(queen));
 
-        print('MOVE ${nearestSite.x} ${nearestSite.y}');
+          var nearestSite = emptySites[0];
+
+          print('MOVE ${nearestSite.x} ${nearestSite.y}');
+        } else {
+          // No empty site, return to the start position
+          print('MOVE ${startPosition.x} ${startPosition.y}');
+        }
       }
     }
 
     // Identify the barracks where I can train an army
-    var barracks = friendlySites.barracks.where((e) => e.isAvailableForTraining()).toList();
+    var availableBarracks = friendlySites.barracks.where((e) => e.isAvailableForTraining()).toList();
 
     // Favor the barracks closest to the enemy queen to train armies
-    barracks.sort(compareDistanceFrom(enemyQueen));
+    availableBarracks.sort(compareDistanceFrom(enemyQueen));
 
-    trace("Barracks: ${barracks}");
+    trace("Barracks: ${availableBarracks}");
 
     // Dispatch the barracks per unit type
-    var archerBarracks2 = barracks.where((e) => e.barracksOf(UnitType.ARCHER)).toList();
-    var knightBarracks2 = barracks.where((e) => e.barracksOf(UnitType.KNIGHT)).toList();
-    var giantsBarracks2 = barracks.where((e) => e.barracksOf(UnitType.GIANT)).toList();
+    var availableArcherBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.ARCHER)).toList();
+    var availableKnightBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.KNIGHT)).toList();
+    var availableGiantsBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.GIANT)).toList();
 
-    trace("Archer barracks (2): ${archerBarracks2}");
-    trace("Knight barracks (2): ${knightBarracks2}");
-    trace("Giant barracks (2): ${giantsBarracks2}");
+    trace("Available archer barracks: ${availableArcherBarracks}");
+    trace("Available knight barracks: ${availableKnightBarracks}");
+    trace("Available giant barracks : ${availableGiantsBarracks}");
 
     var siteIds = <int>[];
 
+    var random = Random();
+
     // Try to train armies based on the remaining gold and available sites
     while (true) {
-      // What kind of unit should we train ?
-      if ((gold >= costOf(UnitType.KNIGHT)) && !knightBarracks2.isEmpty) {
-        var site = knightBarracks2.removeAt(0);
-        gold -= costOf(UnitType.KNIGHT);
-        siteIds.add(site.id);
-      } else if (!archerBarracks2.isEmpty && (gold >= costOf(UnitType.ARCHER))) {
-        var site = archerBarracks2.removeAt(0);
-        gold -= costOf(UnitType.ARCHER);
-        siteIds.add(site.id);
-      } else if (!giantsBarracks2.isEmpty && (gold >= costOf(UnitType.GIANT))) {
-        var site = giantsBarracks2.removeAt(0);
-        gold -= costOf(UnitType.GIANT);
-        siteIds.add(site.id);
-      } else {
-        // Running out of gold
+      var candidates = <UnitType>[];
+
+      for (UnitType type in [ UnitType.KNIGHT, UnitType.ARCHER, UnitType.GIANT ]) {
+        if ((gold >= costOf(type)) && availableBarracks.any((e) => e.barracksOf(type))) {
+          candidates.add(type);
+        }
+      }
+
+      if (candidates.isEmpty) {
+        // Running out gold or available barracks
         break;
       }
+
+      var type = candidates[random.nextInt(candidates.length)];
+      var site = availableBarracks.firstWhere((e) => e.barracksOf(type));
+
+      availableBarracks.remove(site);
+
+      siteIds.add(site.id);
+
+      gold -= costOf(type);
     }
 
     print('TRAIN ${siteIds.join(' ')}'.trim());
