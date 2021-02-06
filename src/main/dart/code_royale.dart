@@ -97,7 +97,7 @@ class BuildingSite extends Entity {
   }
 
   /// Tells whether this site is a barracks training the given type of unit
-  bool barracksOf(UnitType type) {
+  bool withType(UnitType type) {
     assert (type != null);
 
     return claimed && barracks && (getTrainedUnitType() == type);
@@ -271,6 +271,11 @@ Comparator<Entity> compareDistanceFrom(Entity reference) {
   return (a, b) => reference.distanceTo(a).compareTo(reference.distanceTo(b));
 }
 
+List<UnitType> unitTypes() {
+  // Only return the types trained in barracks
+  return [ UnitType.GIANT, UnitType.KNIGHT, UnitType.ARCHER ];
+}
+
 class Units {
   final List<Unit> units;
 
@@ -280,6 +285,47 @@ class Units {
   List<Unit> get archers => units.where((e) => e.archer).toList();
   List<Unit> get giants => units.where((e) => e.giant).toList();
   Unit get queen => units.firstWhere((e) => e.queen);
+
+  List<Unit> withType(UnitType type) => units.where((e) => e.type == type).toList();
+
+  int maxAllowed(UnitType type) {
+    switch (type) {
+      case UnitType.GIANT:
+        return 2;
+      case UnitType.KNIGHT:
+        return 10;
+      case UnitType.ARCHER:
+        return 2;
+      case UnitType.QUEEN:
+        return 1;
+      default:
+        throw "Unexpected unit type: ${type}";
+    }
+  }
+
+  int minAllowed(UnitType type) {
+    switch (type) {
+      case UnitType.GIANT:
+        return 1;
+      case UnitType.KNIGHT:
+        return 3;
+      case UnitType.ARCHER:
+        return 0;
+      case UnitType.QUEEN:
+        return 1;
+      default:
+        throw "Unexpected unit type: ${type}";
+    }
+  }
+
+  /// Returns the types of units which are under the minimum numer of units allowed
+  List<UnitType> typesUnderMin() {
+    return unitTypes().where((type) => withType(type).length < minAllowed(type)).toList();
+  }
+
+  List<UnitType> typesUnderMax() {
+    return unitTypes().where((type) => withType(type).length < maxAllowed(type)).toList();
+  }
 }
 
 class Sites {
@@ -290,9 +336,9 @@ class Sites {
   int get count => sites.length;
 
   List<BuildingSite> get barracks => sites.where((e) => e.barracks).toList();
-  List<BuildingSite> get knightBarracks => sites.where((e) => e.barracks && e.barracksOf(UnitType.KNIGHT)).toList();
-  List<BuildingSite> get archerBarracks => sites.where((e) => e.barracks && e.barracksOf(UnitType.ARCHER)).toList();
-  List<BuildingSite> get giantBarracks => sites.where((e) => e.barracks && e.barracksOf(UnitType.GIANT)).toList();
+  List<BuildingSite> get knightBarracks => sites.where((e) => e.barracks && e.withType(UnitType.KNIGHT)).toList();
+  List<BuildingSite> get archerBarracks => sites.where((e) => e.barracks && e.withType(UnitType.ARCHER)).toList();
+  List<BuildingSite> get giantBarracks => sites.where((e) => e.barracks && e.withType(UnitType.GIANT)).toList();
   List<BuildingSite> get towers => sites.where((e) => e.tower).toList();
 }
 
@@ -431,13 +477,13 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (friendlySites.knightBarracks.length == 0) {
+        if (friendlySites.knightBarracks.length < 1) {
           // Build at least one barracks for knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-        } else if (friendlySites.archerBarracks.length == 0) {
+        /* } else if (friendlySites.archerBarracks.length == 0) {
           // Build at least one barracks for archers
-          print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
-        } else if (friendlySites.giantBarracks.length == 0) {
+          print('BUILD ${touchedSiteId} BARRACKS-ARCHER'); */
+        } else if (friendlySites.giantBarracks.length < 1) {
           // Build at least one barracks for giants
           print('BUILD ${touchedSiteId} BARRACKS-GIANT');
         } else {
@@ -511,9 +557,9 @@ void main() {
     trace("Barracks: ${availableBarracks}");
 
     // Dispatch the barracks per unit type
-    var availableArcherBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.ARCHER)).toList();
-    var availableKnightBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.KNIGHT)).toList();
-    var availableGiantsBarracks = availableBarracks.where((e) => e.barracksOf(UnitType.GIANT)).toList();
+    var availableArcherBarracks = availableBarracks.where((e) => e.withType(UnitType.ARCHER)).toList();
+    var availableKnightBarracks = availableBarracks.where((e) => e.withType(UnitType.KNIGHT)).toList();
+    var availableGiantsBarracks = availableBarracks.where((e) => e.withType(UnitType.GIANT)).toList();
 
     trace("Available archer barracks: ${availableArcherBarracks}");
     trace("Available knight barracks: ${availableKnightBarracks}");
@@ -523,23 +569,62 @@ void main() {
 
     var random = Random();
 
-    // Try to train armies based on the remaining gold and available sites
+    // Try to train armies based on the remaining gold and available barracks
+    // Only decide when we have enough money to afford all the unit types
+    // otherwise we'll only train the cheapest units
+
+    // Consider first the units which are not present in enough numbers on the
+    // ground
+    var candidateTypes = friendlyUnits.typesUnderMin();
+
+    if (candidateTypes.isEmpty) {
+      // All the units are present in the min number, consider the ones which
+      // are under the max number allowed
+      candidateTypes = friendlyUnits.typesUnderMax();
+    }
+
+    if (candidateTypes.isEmpty) {
+      // All the units have reached their maximum number
+    }
+
     while (true) {
       var candidates = <UnitType>[];
 
-      for (UnitType type in [ UnitType.KNIGHT, UnitType.ARCHER, UnitType.GIANT ]) {
-        if ((gold >= costOf(type)) && availableBarracks.any((e) => e.barracksOf(type))) {
-          candidates.add(type);
+      // The order defines the precedence for creating units
+      for (UnitType type in candidateTypes) {
+        var count = friendlyUnits.withType(type).length;
+
+        if (costOf(type) > gold) {
+          // Not enough gold
+          continue;
         }
+
+        if (!availableBarracks.any((e) => e.withType(type))) {
+          // No barracks available for training this type of unit
+          continue;
+        }
+
+        if (count < friendlyUnits.minAllowed(type)) {
+          // Not enough units of this type
+          candidates.add(type);
+          break;
+        }
+
+        if (count >= friendlyUnits.maxAllowed(type)) {
+          // We already trained enough of those units
+          continue;
+        }
+
+        candidates.add(type);
       }
 
       if (candidates.isEmpty) {
-        // Running out gold or available barracks
+        // Running out of available barracks or gold
         break;
       }
 
-      var type = candidates[random.nextInt(candidates.length)];
-      var site = availableBarracks.firstWhere((e) => e.barracksOf(type));
+      var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
+      var site = availableBarracks.firstWhere((e) => e.withType(type));
 
       availableBarracks.remove(site);
 
