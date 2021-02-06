@@ -594,9 +594,9 @@ void main() {
 
     // Consider first the units which are not present in enough numbers on the
     // ground
-    var candidateTypes = unitTypes().where((t) {
-      var count = friendlyUnits.withType(t).count;
-      var range = friendlyUnits.rangeAllowed(t, world);
+    var candidateTypes = unitTypes().where((type) {
+      var count = friendlyUnits.withType(type).count;
+      var range = friendlyUnits.rangeAllowed(type, world);
 
       return count < range.min;
     });
@@ -604,9 +604,9 @@ void main() {
     if (candidateTypes.isEmpty) {
       // All the units are present in the min number, consider the ones which
       // are under the max number allowed
-      candidateTypes = unitTypes().where((t) {
-        var count = friendlyUnits.withType(t).count;
-        var range = friendlyUnits.rangeAllowed(t, world);
+      candidateTypes = unitTypes().where((type) {
+        var count = friendlyUnits.withType(type).count;
+        var range = friendlyUnits.rangeAllowed(type, world);
 
         return (count > range.min) && (count < range.max);
       });
@@ -616,51 +616,51 @@ void main() {
       // All the units have reached their maximum number
     }
 
-    while (true) {
-      var candidates = <UnitType>[];
+        while (true) {
+          var candidates = <UnitType>[];
 
-      // The order defines the precedence for creating units
-      for (UnitType type in candidateTypes) {
-        var count = friendlyUnits.withType(type).count;
+          // The order defines the precedence for creating units
+          for (UnitType type in candidateTypes) {
+            var count = friendlyUnits.withType(type).count;
 
-        if (costOf(type) > gold) {
-          // Not enough gold
-          continue;
+            if (costOf(type) > gold) {
+              // Not enough gold
+              continue;
+            }
+
+            if (!availableBarracks.any((e) => e.withType(type))) {
+              // No barracks available for training this type of unit
+              continue;
+            }
+
+            if (friendlyUnits.rangeAllowed(type, world).below(count)) {
+              // Not enough units of this type
+              candidates.add(type);
+              break;
+            }
+
+            if (friendlyUnits.rangeAllowed(type, world).above(count)) {
+              // We already trained enough of those units
+              continue;
+            }
+
+            candidates.add(type);
+          }
+
+          if (candidates.isEmpty) {
+            // Running out of available barracks or gold
+            break;
+          }
+
+          var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
+          var site = availableBarracks.firstWhere((e) => e.withType(type));
+
+          availableBarracks.remove(site);
+
+          siteIds.add(site.id);
+
+          gold -= costOf(type);
         }
-
-        if (!availableBarracks.any((e) => e.withType(type))) {
-          // No barracks available for training this type of unit
-          continue;
-        }
-
-        if (friendlyUnits.rangeAllowed(type, world).below(count)) {
-          // Not enough units of this type
-          candidates.add(type);
-          break;
-        }
-
-        if (friendlyUnits.rangeAllowed(type, world).above(count)) {
-          // We already trained enough of those units
-          continue;
-        }
-
-        candidates.add(type);
-      }
-
-      if (candidates.isEmpty) {
-        // Running out of available barracks or gold
-        break;
-      }
-
-      var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
-      var site = availableBarracks.firstWhere((e) => e.withType(type));
-
-      availableBarracks.remove(site);
-
-      siteIds.add(site.id);
-
-      gold -= costOf(type);
-    }
 
     print('TRAIN ${siteIds.join(' ')}'.trim());
   }
