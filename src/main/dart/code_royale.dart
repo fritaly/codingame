@@ -406,10 +406,10 @@ class World {
       case BuildingType.BARRACKS_ARCHER:
         return Range(0, 0);
       case BuildingType.BARRACKS_GIANT:
-      // Only build a barracks of giants if the enemy has at least one tower
+        // Only build a barracks of giants if the enemy has at least one tower !
         return (sites.enemy.towers.count > 0) ? Range(1, 1) : Range(0, 0);
       case BuildingType.TOWER:
-      // Don't build more than 5 towers
+        // Don't build more than 5 towers
         return Range(3, 5);
 
       default:
@@ -666,14 +666,17 @@ void main() {
     // Only decide when we have enough money to afford all the unit types
     // otherwise we'll only train the cheapest units
 
-    // Shuffle the list of statuses to introduce some randomness in the training
-    // of units
-    var statuses = UnitType.values().map((type) => world.unitStatus(type)).toList();
+    // Only consider the unit types for which we have at least one barracks
+    // available ! Shuffle the list of statuses to introduce some randomness in
+    // the training of units
+    var statuses = UnitType.values()
+        .where((type) => availableBarracks.any((e) => e.getTrainedUnitType() == type))
+        .map((type) => world.unitStatus(type)).toList();
     statuses.shuffle(random);
 
     // Wait until we have enough gold to train all the candidate types of units
     // otherwise we'll end up always training the cheapest ones (the knights)
-    if (!statuses.any((e) => e.unitType.cost > gold)) {
+    if (!statuses.any((e) => (e.unitType.cost > gold))) {
       while (true) {
         // Whether a unit has been trained during this iteration
         var trained = false;
