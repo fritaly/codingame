@@ -122,16 +122,7 @@ class BuildingSite extends Entity {
   /// Returns the type of the unit trained on this site
   UnitType getTrainedUnitType() {
     if (barracks && claimed) {
-      switch (param2) {
-        case 0:
-          return UnitType.KNIGHT;
-        case 1:
-          return UnitType.ARCHER;
-        case 2:
-          return UnitType.GIANT;
-        default:
-          throw "Unexpected value: ${param2}";
-      }
+      return UnitType.valueOf(param2);
     }
 
     // Return null to indicate that no unit can be trained on this site
@@ -194,7 +185,7 @@ class Unit extends Entity {
     var x = int.parse(inputs[0]);
     var y = int.parse(inputs[1]);
     var owner = ownerOf(int.parse(inputs[2]));
-    var unitType = unitTypeOf(int.parse(inputs[3])); // -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
+    var unitType = UnitType.valueOf(int.parse(inputs[3])); // -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
     var health = int.parse(inputs[4]);
 
     return Unit(Coordinates(x, y), owner, unitType, health);
@@ -205,38 +196,37 @@ class Unit extends Entity {
 // === Unit Type === //
 // ================= //
 
-enum UnitType {
-  QUEEN, KNIGHT, ARCHER, GIANT
-}
+class UnitType {
 
-/// Returns the cost (in gold) for training a unit with the given type
-int costOf(UnitType type) {
-  assert (type != null);
+  /// The int value identifying the unit type
+  final int value;
 
-  switch (type) {
-    case UnitType.KNIGHT:
-      return 80;
-    case UnitType.ARCHER:
-      return 100;
-    case UnitType.GIANT:
-      return 140;
-    default:
-      throw "Unexpected unit type: ${type}";
-  }
-}
+  /// The cost (in gold) for training a unit with the given type
+  final int cost;
 
-UnitType unitTypeOf(int value) {
-  switch (value) {
-    case -1:
-      return UnitType.QUEEN;
-    case 0:
-      return UnitType.KNIGHT;
-    case 1:
-      return UnitType.ARCHER;
-    case 2:
-      return UnitType.GIANT;
-    default:
-      throw "Unexpected unit type: ${value}";
+  static const UnitType QUEEN = UnitType(-1, 0);
+  static const UnitType KNIGHT = UnitType(0, 80);
+  static const UnitType ARCHER = UnitType(1, 100);
+  static const UnitType GIANT = UnitType(2, 140);
+
+  /// Only return the types for the units which can be trained in barracks
+  static List<UnitType> values() => [ KNIGHT, ARCHER, GIANT ];
+
+  const UnitType(this.value, this.cost);
+
+  factory UnitType.valueOf(int value) {
+    switch (value) {
+      case -1:
+        return QUEEN;
+      case 0:
+        return KNIGHT;
+      case 1:
+        return ARCHER;
+      case 2:
+        return GIANT;
+      default:
+        throw "Unexpected unit type: ${value}";
+    }
   }
 }
 
@@ -285,11 +275,6 @@ Owner ownerOf(int value) {
 
 Comparator<Entity> compareDistanceFrom(Entity reference) {
   return (a, b) => reference.distanceTo(a).compareTo(reference.distanceTo(b));
-}
-
-List<UnitType> unitTypes() {
-  // Only return the types trained in barracks
-  return [ UnitType.GIANT, UnitType.KNIGHT, UnitType.ARCHER ];
 }
 
 class Units {
@@ -594,7 +579,7 @@ void main() {
 
     // Consider first the units which are not present in enough numbers on the
     // ground
-    var candidateTypes = unitTypes().where((type) {
+    var candidateTypes = UnitType.values().where((type) {
       var count = friendlyUnits.withType(type).count;
       var range = friendlyUnits.rangeAllowed(type, world);
 
@@ -604,7 +589,7 @@ void main() {
     if (candidateTypes.isEmpty) {
       // All the units are present in the min number, consider the ones which
       // are under the max number allowed
-      candidateTypes = unitTypes().where((type) {
+      candidateTypes = UnitType.values().where((type) {
         var count = friendlyUnits.withType(type).count;
         var range = friendlyUnits.rangeAllowed(type, world);
 
@@ -616,51 +601,51 @@ void main() {
       // All the units have reached their maximum number
     }
 
-        while (true) {
-          var candidates = <UnitType>[];
+    while (true) {
+      var candidates = <UnitType>[];
 
-          // The order defines the precedence for creating units
-          for (UnitType type in candidateTypes) {
-            var count = friendlyUnits.withType(type).count;
+      // The order defines the precedence for creating units
+      for (UnitType type in candidateTypes) {
+        var count = friendlyUnits.withType(type).count;
 
-            if (costOf(type) > gold) {
-              // Not enough gold
-              continue;
-            }
-
-            if (!availableBarracks.any((e) => e.withType(type))) {
-              // No barracks available for training this type of unit
-              continue;
-            }
-
-            if (friendlyUnits.rangeAllowed(type, world).below(count)) {
-              // Not enough units of this type
-              candidates.add(type);
-              break;
-            }
-
-            if (friendlyUnits.rangeAllowed(type, world).above(count)) {
-              // We already trained enough of those units
-              continue;
-            }
-
-            candidates.add(type);
-          }
-
-          if (candidates.isEmpty) {
-            // Running out of available barracks or gold
-            break;
-          }
-
-          var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
-          var site = availableBarracks.firstWhere((e) => e.withType(type));
-
-          availableBarracks.remove(site);
-
-          siteIds.add(site.id);
-
-          gold -= costOf(type);
+        if (type.cost > gold) {
+          // Not enough gold
+          continue;
         }
+
+        if (!availableBarracks.any((e) => e.withType(type))) {
+          // No barracks available for training this type of unit
+          continue;
+        }
+
+        if (friendlyUnits.rangeAllowed(type, world).below(count)) {
+          // Not enough units of this type
+          candidates.add(type);
+          break;
+        }
+
+        if (friendlyUnits.rangeAllowed(type, world).above(count)) {
+          // We already trained enough of those units
+          continue;
+        }
+
+        candidates.add(type);
+      }
+
+      if (candidates.isEmpty) {
+        // Running out of available barracks or gold
+        break;
+      }
+
+      var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
+      var site = availableBarracks.firstWhere((e) => e.withType(type));
+
+      availableBarracks.remove(site);
+
+      siteIds.add(site.id);
+
+      gold -= type.cost;
+    }
 
     print('TRAIN ${siteIds.join(' ')}'.trim());
   }
