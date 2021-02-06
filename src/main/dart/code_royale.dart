@@ -88,8 +88,8 @@ abstract class Entity {
 
   Coordinates get coordinates => _coordinates;
 
-  double distanceTo(Entity target) {
-    return this._coordinates.distance(target._coordinates);
+  double distanceTo(Coordinates target) {
+    return this._coordinates.distance(target);
   }
 }
 
@@ -348,8 +348,8 @@ Owner ownerOf(int value) {
   }
 }
 
-Comparator<Entity> compareDistanceFrom(Entity reference) {
-  return (a, b) => reference.distanceTo(a).compareTo(reference.distanceTo(b));
+Comparator<Entity> compareDistanceFrom(Coordinates reference) {
+  return (a, b) => a.distanceTo(reference).compareTo(b.distanceTo(reference));
 }
 
 class Units {
@@ -360,6 +360,9 @@ class Units {
   int get count => units.length;
 
   Units where(bool test(Unit element)) => Units(units.where((e) => test(e)).toList());
+
+  Units get friendly => Units(units.where((e) => e.friendly).toList());
+  Units get enemy => Units(units.where((e) => e.enemy).toList());
 
   Units get knights => where((e) => e.knight);
   Units get archers => where((e) => e.archer);
@@ -515,15 +518,10 @@ void main() {
 
     // Identify my own sites and units
     var friendlySites = allSites.friendly;
-    var friendlyUnits = Units(units.where((e) => e.friendly).toList());
-
-    trace("Knights: ${friendlyUnits.knights.count}");
-    trace("Giants: ${friendlyUnits.giants.count}");
-    trace("Archers: ${friendlyUnits.archers.count}");
 
     // Identify the queens
-    var queen = friendlyUnits.queen;
-    var enemyQueen = allUnits.units.firstWhere((e) => e.enemy && e.queen);
+    var queen = allUnits.friendly.queen;
+    var enemyQueen = allUnits.enemy.queen;
 
     if (previousHealth != -1) {
       healthLost = previousHealth - queen.health;
@@ -595,6 +593,7 @@ void main() {
 
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
+        // TODO Change this to remove hard-coded values
         if (((friendlySites.towers.count >= 5) && (friendlySites.giantBarracks.count >= 1) && (friendlySites.knightBarracks.count >= 1)) || nearestSites.isEmpty) {
           // We already built all our sites or no empty site available, return to the start position
           print('MOVE ${startPosition.x} ${startPosition.y}');
@@ -628,7 +627,7 @@ void main() {
         trace("Nearest sites:\n${emptySites.join('\n')}");
 
         if (!emptySites.isEmpty) {
-          emptySites.sort(compareDistanceFrom(queen));
+          emptySites.sort(compareDistanceFrom(queen.coordinates));
 
           var nearestSite = emptySites[0];
 
@@ -644,7 +643,7 @@ void main() {
     var availableBarracks = friendlySites.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
 
     // Favor the barracks closest to the enemy queen to train armies
-    availableBarracks.sort(compareDistanceFrom(enemyQueen));
+    availableBarracks.sort(compareDistanceFrom(enemyQueen.coordinates));
 
     trace("Barracks: ${availableBarracks}");
 
