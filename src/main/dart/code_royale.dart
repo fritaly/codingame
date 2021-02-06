@@ -360,24 +360,6 @@ class Sites {
   Sites get archerBarracks => where((e) => e.barracks && e.withType(UnitType.ARCHER));
   Sites get giantBarracks => where((e) => e.barracks && e.withType(UnitType.GIANT));
   Sites get towers => where((e) => e.tower);
-
-  Range range(BuildingType type, World world) {
-    switch (type) {
-      case BuildingType.BARRACKS_KNIGHT:
-          return Range(1, 1);
-      case BuildingType.BARRACKS_ARCHER:
-          return Range(0, 0);
-      case BuildingType.BARRACKS_GIANT:
-        // Only build a barracks of giants if the enemy has at least one tower
-        return (world.sites.enemy.towers.count > 0) ? Range(1, 1) : Range(0, 0);
-      case BuildingType.TOWER:
-        // Don't build more than 5 towers
-        return Range(3, 5);
-
-      default:
-        throw "Unexpected structure type: ${type}";
-    }
-  }
 }
 
 // ============= //
@@ -389,6 +371,24 @@ class World {
   final Sites sites;
 
   World(this.units, this.sites);
+
+  Range range(BuildingType type) {
+    switch (type) {
+      case BuildingType.BARRACKS_KNIGHT:
+        return Range(1, 1);
+      case BuildingType.BARRACKS_ARCHER:
+        return Range(0, 0);
+      case BuildingType.BARRACKS_GIANT:
+      // Only build a barracks of giants if the enemy has at least one tower
+        return (sites.enemy.towers.count > 0) ? Range(1, 1) : Range(0, 0);
+      case BuildingType.TOWER:
+      // Don't build more than 5 towers
+        return Range(3, 5);
+
+      default:
+        throw "Unexpected structure type: ${type}";
+    }
+  }
 }
 
 void main() {
@@ -507,16 +507,16 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (allSites.range(BuildingType.BARRACKS_KNIGHT, world).below(friendlySites.knightBarracks.count)) {
+        if (world.range(BuildingType.BARRACKS_KNIGHT).below(friendlySites.knightBarracks.count)) {
           // Build one barracks for knights
           print(BuildingType.BARRACKS_KNIGHT.buildOrder(touchedSiteId));
-        } else if (allSites.range(BuildingType.BARRACKS_ARCHER, world).below(friendlySites.archerBarracks.count)) {
+        } else if (world.range(BuildingType.BARRACKS_ARCHER).below(friendlySites.archerBarracks.count)) {
           // Build one barracks for archers
           print(BuildingType.BARRACKS_ARCHER.buildOrder(touchedSiteId));
-        } else if (allSites.range(BuildingType.BARRACKS_GIANT, world).below(friendlySites.giantBarracks.count)) {
+        } else if (world.range(BuildingType.BARRACKS_GIANT).below(friendlySites.giantBarracks.count)) {
           // Build one barracks for giants
           print(BuildingType.BARRACKS_GIANT.buildOrder(touchedSiteId));
-        } else if (allSites.range(BuildingType.TOWER, world).below(friendlySites.towers.count)) {
+        } else if (world.range(BuildingType.TOWER).below(friendlySites.towers.count)) {
           // Build a tower
           print(BuildingType.TOWER.buildOrder(touchedSiteId));
         } else {
