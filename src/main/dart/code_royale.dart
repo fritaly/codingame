@@ -37,9 +37,15 @@ class Range {
   }
 }
 
+/// Store all the information about a given type of building to drive the
+/// decision to build
 class BuildingStatus {
   final Range range;
+
+  /// The number of buildings with this type
   final int count;
+
+  /// The type of the building
   final BuildingType buildingType;
 
   BuildingStatus(this.range, this.count, this.buildingType);
@@ -53,9 +59,15 @@ class BuildingStatus {
   bool canBuild() => (range.min <= count) && (count < range.max);
 }
 
+/// Store all the information about a given type of unit to drive the decision
+/// to train
 class UnitStatus {
   final Range range;
+
+  /// The number of units with this type
   final int count;
+
+  /// The type of the unit
   final UnitType unitType;
 
   UnitStatus(this.range, this.count, this.unitType);
@@ -421,7 +433,7 @@ class World {
     }
   }
 
-  BuildingStatus status(BuildingType type) {
+  BuildingStatus buildingStatus(BuildingType type) {
     // Count the number of friendly sites matching this build type
     return BuildingStatus(range(type), sites.sites.where((site) => site.friendly && type.matches(site)).length, type);
   }
@@ -548,7 +560,7 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        var statuses = BuildingType.values().map((type) => world.status(type)).toList();
+        var statuses = BuildingType.values().map((type) => world.buildingStatus(type)).toList();
 
         var built = false;
 
