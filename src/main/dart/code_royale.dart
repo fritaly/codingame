@@ -379,6 +379,8 @@ class Sites {
 
   int get count => sites.length;
 
+  BuildingSite site(int id) => sites.firstWhere((e) => e.id == id);
+
   Sites where(bool test(BuildingSite element)) => Sites(sites.where((e) => test(e)).toList());
 
   Sites get friendly => where((e) => e.friendly);
@@ -399,8 +401,12 @@ class Sites {
 class World {
   final Units units;
   final Sites sites;
+  final Coordinates startPosition;
+  final int touchedSiteId;
 
-  World(this.units, this.sites);
+  World(this.units, this.sites, this.startPosition, this.touchedSiteId);
+
+  Unit get queen => units.friendly.queen;
 
   Range range(BuildingType type) {
     switch (type) {
@@ -447,100 +453,20 @@ class World {
   }
 }
 
-void main() {
-  var numSites = int.parse(stdin.readLineSync());
+abstract class Mode {
+  void run(World world);
+}
 
-  trace("${numSites}");
+class NormalMode extends Mode {
 
-  var sitesById = Map<int, Site>();
-
-  for (int i = 0; i < numSites; i++) {
-    var inputs = stdin.readLineSync().split(' ');
-
-    trace("${inputs.join(' ')}");
-
-    var siteId = int.parse(inputs[0]);
-    var x = int.parse(inputs[1]);
-    var y = int.parse(inputs[2]);
-    var radius = int.parse(inputs[3]);
-
-    sitesById[siteId] = Site(siteId, Coordinates(x, y), radius);
-  }
-
-  // The coordinates where the queen appeared on the map
-  Coordinates startPosition;
-
-  var round = 1;
-  var previousHealth = -1, healthLost = 0;
-
-  // Game loop
-  while (true) {
-    var message = "### Round ${round++} ###";
-
-    trace('');
-    trace('#' * message.length);
-    trace(message);
-    trace('#' * message.length);
-    trace('');
-
-    var inputs = stdin.readLineSync().split(' ');
-
-    trace("${inputs.join(' ')}");
-
-    var gold = int.parse(inputs[0]);
-
-    trace("${gold}");
-
-    var touchedSiteId = int.parse(inputs[1]);
-
-    trace("${touchedSiteId}");
-
-    var buildingSites = Map<int, BuildingSite>();
-
-    for (int i = 0; i < numSites; i++) {
-      var buildingSite = BuildingSite.from(stdin, sitesById);
-
-      buildingSites[buildingSite.id] = buildingSite;
-    }
-
-    var numUnits = int.parse(stdin.readLineSync());
-
-    var units = <Unit>[];
-
-    for (int i = 0; i < numUnits; i++) {
-      units.add(Unit.from(stdin));
-    }
-
-    var allSites = Sites(buildingSites.values.toList());
-    var allUnits = Units(units);
-
-    var world = World(allUnits, allSites);
-
-    // Identify my own sites and units
-    var friendlySites = allSites.friendly;
-
-    // Identify the queens
-    var queen = allUnits.friendly.queen;
-    var enemyQueen = allUnits.enemy.queen;
-
-    if (previousHealth != -1) {
-      healthLost = previousHealth - queen.health;
-
-      if (healthLost > 0) {
-        trace("The queen lost ${healthLost} health");
-      }
-    }
-
-    previousHealth = queen.health;
-
-    // Store the queen's start position
-    if (startPosition == null) {
-      startPosition = queen.coordinates;
-    }
+  @override
+  void run(World world) {
+    var startPosition = world.startPosition;
+    var touchedSiteId = world.touchedSiteId;
 
     if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
-      var touchedSite = buildingSites[touchedSiteId];
+      var touchedSite = world.sites.site(touchedSiteId);
 
       trace("The queen is touching site ${touchedSiteId} (${touchedSite})");
 
@@ -585,7 +511,7 @@ void main() {
         trace("The site is friendly, searching new site ...");
 
         // Identify the nearest empty sites in my half of the map
-        var nearestSites = buildingSites.values.where((e) => e.neutral && (startPosition.distance(e.coordinates) <= (1920 / 2)) ).toList();
+        var nearestSites = world.sites.neutral.where((e) => (startPosition.distance(e.coordinates) <= (1920 / 2))).sites;
 
         // Sort the sites based on their distance from the queen's start position
         // This ensures the queen doesn't wander towards the enemy's territory
@@ -594,6 +520,8 @@ void main() {
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
         // TODO Change this to remove hard-coded values
+        var friendlySites = world.sites.friendly;
+
         if (((friendlySites.towers.count >= 5) && (friendlySites.giantBarracks.count >= 1) && (friendlySites.knightBarracks.count >= 1)) || nearestSites.isEmpty) {
           // We already built all our sites or no empty site available, return to the start position
           print('MOVE ${startPosition.x} ${startPosition.y}');
@@ -610,8 +538,9 @@ void main() {
       }
     } else {
       // The queen is not touching a site
+      var friendlySites = world.sites.friendly;
 
-      if (friendlySites.barracks.count >= (buildingSites.length / 2)) {
+      if (friendlySites.barracks.count >= (world.sites.count / 2)) {
         // Don't build more than N/2 sites and enter escape mode by returning
         // to the start position
         // TODO Send the queen next to a defensive tower
@@ -622,12 +551,12 @@ void main() {
         trace("The queen isn't touching a site, searching destination ...");
 
         // Identify the nearest empty sites
-        var emptySites = buildingSites.values.where((e) => !e.claimed).toList();
+        var emptySites = world.sites.neutral.sites;
 
         trace("Nearest sites:\n${emptySites.join('\n')}");
 
         if (!emptySites.isEmpty) {
-          emptySites.sort(compareDistanceFrom(queen.coordinates));
+          emptySites.sort(compareDistanceFrom(world.queen.coordinates));
 
           var nearestSite = emptySites[0];
 
@@ -638,6 +567,103 @@ void main() {
         }
       }
     }
+  }
+}
+
+void main() {
+  var numSites = int.parse(stdin.readLineSync());
+
+  trace("${numSites}");
+
+  var sitesById = Map<int, Site>();
+
+  for (int i = 0; i < numSites; i++) {
+    var inputs = stdin.readLineSync().split(' ');
+
+    trace("${inputs.join(' ')}");
+
+    var siteId = int.parse(inputs[0]);
+    var x = int.parse(inputs[1]);
+    var y = int.parse(inputs[2]);
+    var radius = int.parse(inputs[3]);
+
+    sitesById[siteId] = Site(siteId, Coordinates(x, y), radius);
+  }
+
+  // The coordinates where the queen appeared on the map
+  Coordinates startPosition;
+
+  var round = 1;
+  var previousHealth = -1, healthLost = 0;
+  var mode = new NormalMode();
+
+  // Game loop
+  while (true) {
+    var message = "### Round ${round++} ###";
+
+    trace('');
+    trace('#' * message.length);
+    trace(message);
+    trace('#' * message.length);
+    trace('');
+
+    var inputs = stdin.readLineSync().split(' ');
+
+    trace("${inputs.join(' ')}");
+
+    var gold = int.parse(inputs[0]);
+
+    trace("${gold}");
+
+    var touchedSiteId = int.parse(inputs[1]);
+
+    trace("${touchedSiteId}");
+
+    var buildingSites = Map<int, BuildingSite>();
+
+    for (int i = 0; i < numSites; i++) {
+      var buildingSite = BuildingSite.from(stdin, sitesById);
+
+      buildingSites[buildingSite.id] = buildingSite;
+    }
+
+    var numUnits = int.parse(stdin.readLineSync());
+
+    var units = <Unit>[];
+
+    for (int i = 0; i < numUnits; i++) {
+      units.add(Unit.from(stdin));
+    }
+
+    var allSites = Sites(buildingSites.values.toList());
+    var allUnits = Units(units);
+
+    var world = World(allUnits, allSites, startPosition, touchedSiteId);
+
+    // Identify my own sites and units
+    var friendlySites = allSites.friendly;
+
+    // Identify the queens
+    var queen = allUnits.friendly.queen;
+    var enemyQueen = allUnits.enemy.queen;
+
+    if (previousHealth != -1) {
+      healthLost = previousHealth - queen.health;
+
+      if (healthLost > 0) {
+        trace("The queen lost ${healthLost} health");
+      }
+    }
+
+    previousHealth = queen.health;
+
+    // Store the queen's start position
+    if (startPosition == null) {
+      startPosition = queen.coordinates;
+    }
+
+    // Delegate to the current mode
+    mode.run(world);
 
     // Identify the barracks where I can train an army
     var availableBarracks = friendlySites.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
