@@ -468,6 +468,7 @@ void main() {
   Coordinates startPosition;
 
   var round = 1;
+  var previousHealth = -1, healthLost = 0;
 
   // Game loop
   while (true) {
@@ -524,33 +525,22 @@ void main() {
     var queen = friendlyUnits.queen;
     var enemyQueen = allUnits.units.firstWhere((e) => e.enemy && e.queen);
 
+    if (previousHealth != -1) {
+      healthLost = previousHealth - queen.health;
+
+      if (healthLost > 0) {
+        trace("The queen lost ${healthLost} health");
+      }
+    }
+
+    previousHealth = queen.health;
+
     // Store the queen's start position
     if (startPosition == null) {
       startPosition = queen.coordinates;
     }
 
-    // Identify the enemy units near the queen
-    /* var nearbyEnemies = enemyUnits.units.where((e) => queen.distanceTo(e) < 300).toList();
-
-    trace("Nearby enemies: ${nearbyEnemies}");
-
-    if (!nearbyEnemies.isEmpty) {
-      // The queen is under attack
-      var nearestTowers = List<BuildingSite>.from(towers);
-      nearestTowers.sort(compareDistanceFrom(queen));
-
-      trace("Nearest towers: ${nearestTowers}");
-
-      if (nearestTowers.isEmpty) {
-        // No tower available !
-        print('WAIT'); // TODO Handle this use case
-      } else {
-        // Flee to the closest tower
-        var nearestTower = nearestTowers[0];
-
-        print('MOVE ${nearestTower.x} ${nearestTower.y}');
-      }
-    } else */ if (touchedSiteId != -1) {
+    if (touchedSiteId != -1) {
       // The queen is touching a site, is there a building on it ?
       var touchedSite = buildingSites[touchedSiteId];
 
