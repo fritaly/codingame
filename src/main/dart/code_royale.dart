@@ -31,13 +31,20 @@ class Range {
 
   Range(this.min, this.max);
 
-  bool contains(int n) => (min <= n) && (n <= max);
-  bool below(int n) => (n < min);
-
   @override
   String toString() {
     return "Range[${min}-${max}]";
   }
+}
+
+class Status {
+  final Range range;
+  final int count;
+
+  Status(this.range, this.count);
+
+  bool mustBuild() => (count < range.min);
+  bool canBuild() => (range.min <= count) && (count < range.max);
 }
 
 abstract class Entity {
@@ -166,6 +173,8 @@ class BuildingType {
   static List<BuildingType> values() => [ BARRACKS_KNIGHT, BARRACKS_ARCHER, BARRACKS_GIANT, TOWER ];
 
   const BuildingType(this.structureType, this.unitType);
+
+  bool matches(BuildingSite site) => (site.type == structureType) && (site.getTrainedUnitType() == unitType);
 
   String buildOrder(int siteId) {
     switch (this) {
@@ -389,6 +398,11 @@ class World {
         throw "Unexpected structure type: ${type}";
     }
   }
+
+  Status status(BuildingType type) {
+    // Count the number of friendly sites matching this build type
+    return Status(range(type), sites.sites.where((site) => site.friendly && type.matches(site)).length);
+  }
 }
 
 void main() {
@@ -507,16 +521,16 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (world.range(BuildingType.BARRACKS_KNIGHT).below(friendlySites.knightBarracks.count)) {
+        if (world.status(BuildingType.BARRACKS_KNIGHT).mustBuild()) {
           // Build one barracks for knights
           print(BuildingType.BARRACKS_KNIGHT.buildOrder(touchedSiteId));
-        } else if (world.range(BuildingType.BARRACKS_ARCHER).below(friendlySites.archerBarracks.count)) {
+        } else if (world.status(BuildingType.BARRACKS_ARCHER).mustBuild()) {
           // Build one barracks for archers
           print(BuildingType.BARRACKS_ARCHER.buildOrder(touchedSiteId));
-        } else if (world.range(BuildingType.BARRACKS_GIANT).below(friendlySites.giantBarracks.count)) {
+        } else if (world.status(BuildingType.BARRACKS_GIANT).mustBuild()) {
           // Build one barracks for giants
           print(BuildingType.BARRACKS_GIANT.buildOrder(touchedSiteId));
-        } else if (world.range(BuildingType.TOWER).below(friendlySites.towers.count)) {
+        } else if (world.status(BuildingType.TOWER).mustBuild()) {
           // Build a tower
           print(BuildingType.TOWER.buildOrder(touchedSiteId));
         } else {
