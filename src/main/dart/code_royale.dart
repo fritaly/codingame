@@ -37,13 +37,19 @@ class Range {
   }
 }
 
-class Status {
+class BuildingStatus {
   final Range range;
   final int count;
+  final BuildingType buildingType;
 
-  Status(this.range, this.count);
+  BuildingStatus(this.range, this.count, this.buildingType);
 
+  /// Tells whether one building must be built because the minimum number hasn't
+  /// yet been reached
   bool mustBuild() => (count < range.min);
+
+  /// Tells whether one building can be built because the maximum number hasn't
+  /// yet been reached
   bool canBuild() => (range.min <= count) && (count < range.max);
 }
 
@@ -399,9 +405,9 @@ class World {
     }
   }
 
-  Status status(BuildingType type) {
+  BuildingStatus status(BuildingType type) {
     // Count the number of friendly sites matching this build type
-    return Status(range(type), sites.sites.where((site) => site.friendly && type.matches(site)).length);
+    return BuildingStatus(range(type), sites.sites.where((site) => site.friendly && type.matches(site)).length, type);
   }
 }
 
@@ -521,22 +527,36 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (world.status(BuildingType.BARRACKS_KNIGHT).mustBuild()) {
-          // Build one barracks for knights
-          print(BuildingType.BARRACKS_KNIGHT.buildOrder(touchedSiteId));
-        } else if (world.status(BuildingType.BARRACKS_ARCHER).mustBuild()) {
-          // Build one barracks for archers
-          print(BuildingType.BARRACKS_ARCHER.buildOrder(touchedSiteId));
-        } else if (world.status(BuildingType.BARRACKS_GIANT).mustBuild()) {
-          // Build one barracks for giants
-          print(BuildingType.BARRACKS_GIANT.buildOrder(touchedSiteId));
-        } else if (world.status(BuildingType.TOWER).mustBuild()) {
-          // Build a tower
-          print(BuildingType.TOWER.buildOrder(touchedSiteId));
-        } else {
-          // All the building have been built, return to the start position (the
-          // further from the enemy units, the better since they take longer to
-          // reach the queen and have a limited life span)
+        var statuses = BuildingType.values().map((type) => world.status(type)).toList();
+
+        var built = false;
+
+        // Check first whether some buildings must be built
+        for (var status in statuses) {
+          if (status.mustBuild()) {
+            // Not enough sites of this type, build one
+            print(status.buildingType.buildOrder(touchedSiteId));
+            built = true;
+            break;
+          }
+        }
+
+        if (!built) {
+          // Check next whether some buildings can be built
+          for (var status in statuses) {
+            if (status.canBuild()) {
+              // We can have more sites of this type, build one
+              print(status.buildingType.buildOrder(touchedSiteId));
+              built = true;
+              break;
+            }
+          }
+        }
+
+        if (!built) {
+          // All the possible buildings have been built, return to the start
+          // position (the further from the enemy units, the better since they
+          // take longer to reach the queen and have a limited life span)
           print('MOVE ${startPosition.x} ${startPosition.y}');
         }
       } else if (touchedSite.friendly) {
