@@ -53,6 +53,22 @@ class BuildingStatus {
   bool canBuild() => (range.min <= count) && (count < range.max);
 }
 
+class UnitStatus {
+  final Range range;
+  final int count;
+  final UnitType unitType;
+
+  UnitStatus(this.range, this.count, this.unitType);
+
+  /// Tells whether one unit must be trained because the minimum number hasn't
+  /// yet been reached
+  bool mustTrain() => (count < range.min);
+
+  /// Tells whether one unit can be trained because the maximum number hasn't
+  /// yet been reached
+  bool canTrain() => (range.min <= count) && (count < range.max);
+}
+
 abstract class Entity {
   final Coordinates _coordinates;
 
@@ -339,22 +355,6 @@ class Units {
   Unit get queen => units.firstWhere((e) => e.queen);
 
   Units withType(UnitType type) => where((e) => e.type == type);
-
-  Range range(UnitType type, World world) {
-    switch (type) {
-      case UnitType.GIANT:
-        return Range(1, 2);
-      case UnitType.KNIGHT:
-        // Knights are created per group of 4 !
-        return Range(12, 20);
-      case UnitType.ARCHER:
-        return Range(1, 2);
-      case UnitType.QUEEN:
-        return Range(1, 1);
-      default:
-        throw "Unexpected unit type: ${type}";
-    }
-  }
 }
 
 class Sites {
@@ -405,9 +405,30 @@ class World {
     }
   }
 
+  Range unitRange(UnitType type) {
+    switch (type) {
+      case UnitType.GIANT:
+        return Range(1, 2);
+      case UnitType.KNIGHT:
+      // Knights are created per group of 4 !
+        return Range(12, 20);
+      case UnitType.ARCHER:
+        return Range(1, 2);
+      case UnitType.QUEEN:
+        return Range(1, 1);
+      default:
+        throw "Unexpected unit type: ${type}";
+    }
+  }
+
   BuildingStatus status(BuildingType type) {
     // Count the number of friendly sites matching this build type
     return BuildingStatus(range(type), sites.sites.where((site) => site.friendly && type.matches(site)).length, type);
+  }
+
+  UnitStatus unitStatus(UnitType type) {
+    // Count the number of friendly units matching this unit type
+    return UnitStatus(unitRange(type), units.units.where((unit) => unit.friendly && (unit.type == type)).length, type);
   }
 }
 
@@ -625,15 +646,6 @@ void main() {
 
     trace("Barracks: ${availableBarracks}");
 
-    // Dispatch the barracks per unit type
-    var archerBarracks = availableBarracks.where((e) => e.withType(UnitType.ARCHER)).toList();
-    var knightBarracks = availableBarracks.where((e) => e.withType(UnitType.KNIGHT)).toList();
-    var giantsBarracks = availableBarracks.where((e) => e.withType(UnitType.GIANT)).toList();
-
-    trace("Archer barracks: ${archerBarracks}");
-    trace("Knight barracks: ${knightBarracks}");
-    trace("Giant barracks : ${giantsBarracks}");
-
     var siteIds = <int>[];
 
     var random = Random();
@@ -642,86 +654,55 @@ void main() {
     // Only decide when we have enough money to afford all the unit types
     // otherwise we'll only train the cheapest units
 
-    // Consider first the units which are not present in enough numbers on the
-    // ground
-    var candidateTypes = UnitType.values().where((type) {
-      var count = friendlyUnits.withType(type).count;
-      var range = friendlyUnits.range(type, world);
+    // Shuffle the list of statuses to introduce some randomness in the training
+    // of units
+    var statuses = UnitType.values().map((type) => world.unitStatus(type)).toList();
+    statuses.shuffle(random);
 
-      return count < range.min;
-    }).toList();
-
-    if (candidateTypes.isEmpty) {
-      // All the units are present in the min number, consider the ones which
-      // are under the max number allowed
-      candidateTypes = UnitType.values().where((type) {
-        var count = friendlyUnits.withType(type).count;
-        var range = friendlyUnits.range(type, world);
-
-        return (count >= range.min) && (count < range.max);
-      }).toList();
-    }
-
-    if (candidateTypes.isEmpty) {
-      // All the units have reached their maximum number
-    }
-
-    // Wait until we have enough gold to train all the candidate types otherwise
-    // we'll end up always training the cheapest units (the knights)
-    if (!candidateTypes.any((type) => type.cost > gold)) {
+    // Wait until we have enough gold to train all the candidate types of units
+    // otherwise we'll end up always training the cheapest ones (the knights)
+    if (!statuses.any((e) => e.unitType.cost > gold)) {
       while (true) {
-        var candidates = <UnitType>[];
+        // Whether a unit has been trained during this iteration
+        var trained = false;
 
-        // The order defines the precedence for creating units
-        while (!candidateTypes.isEmpty) {
-          // Pick a random type from the list of candidates
-          var type = candidateTypes.removeAt(random.nextInt(candidateTypes.length));
+        // Check first whether some units must be trained
+        for (var status in statuses) {
+          // Barracks available to train this type of unit ?
+          var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType)).toList();
 
-          if (type.cost > gold) {
-            // Not enough gold
-            continue;
-          }
-
-          // How many units of this type do we currently have ?
-          var count = friendlyUnits.withType(type).count;
-
-          if (!availableBarracks.any((e) => e.withType(type))) {
-            // No barracks available for training this type of unit
-            continue;
-          }
-
-          var range = friendlyUnits.range(type, world);
-
-          if (count < range.min) {
-            // Not enough units of this type
-            candidates.add(type);
+          if (!barracks.isEmpty && status.mustTrain() && (gold >= status.unitType.cost)) {
+            // Not enough units of this type, train one
+            siteIds.add(barracks.removeAt(0).id);
+            gold -= status.unitType.cost;
+            trained = true;
             break;
           }
-
-          if (count > range.max) {
-            // We already trained enough of those units
-            continue;
-          }
-
-          candidates.add(type);
         }
 
-        if (candidates.isEmpty) {
-          // Running out of available barracks or gold
+        if (!trained) {
+          // Check next whether some units can be trained
+          for (var status in statuses) {
+            // Barracks available to train this type of unit ?
+            var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType)).toList();
+
+            if (!barracks.isEmpty && status.canTrain() && (gold >= status.unitType.cost)) {
+              // Not enough units of this type, train one
+              siteIds.add(barracks.removeAt(0).id);
+              gold -= status.unitType.cost;
+              trained = true;
+              break;
+            }
+          }
+        }
+
+        if (!trained) {
+          // All the possible units have been trained
           break;
         }
-
-        var type = candidates[0]; // candidates[random.nextInt(candidates.length)];
-        var site = availableBarracks.firstWhere((e) => e.withType(type));
-
-        availableBarracks.remove(site);
-
-        siteIds.add(site.id);
-
-        gold -= type.cost;
       }
     } else {
-      trace("Not enough gold to trace all the possible unit types");
+      trace("Waiting: not enough gold to train all the possible unit types");
     }
 
     print('TRAIN ${siteIds.join(' ')}'.trim());
