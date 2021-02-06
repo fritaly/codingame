@@ -345,7 +345,8 @@ class Sites {
         break;
 
       case StructureType.TOWER:
-        return Range(3, 10);
+        // Don't build more than 4 towers
+        return Range(3, 4);
 
       default:
         throw "Unexpected structure type: ${type}";
@@ -489,9 +490,14 @@ void main() {
         } else if (allSites.range(StructureType.BARRACKS, UnitType.GIANT, world).below(friendlySites.giantBarracks.count)) {
           // Build one barracks for giants
           print('BUILD ${touchedSiteId} BARRACKS-GIANT');
-        } else {
-          // Else build a tower
+        } else if (allSites.range(StructureType.TOWER, null, world).below(friendlySites.towers.count)) {
+          // Build a tower
           print('BUILD ${touchedSiteId} TOWER');
+        } else {
+          // All the building have been built, return to the start position (the
+          // further from the enemy units, the better since they take longer to
+          // reach the queen and have a limited life span)
+          print('MOVE ${startPosition.x} ${startPosition.y}');
         }
       } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
