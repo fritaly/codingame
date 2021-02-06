@@ -25,6 +25,22 @@ class Coordinates {
   }
 }
 
+class Range {
+  /// The max is included in the range
+  final int min, max;
+
+  Range(this.min, this.max);
+
+  bool contains(int n) => (min <= n) && (n <= max);
+  bool below(int n) => (n < min);
+  bool above(int n) => (n > max);
+
+  @override
+  String toString() {
+    return "Range[${min}-${max}]";
+  }
+}
+
 abstract class Entity {
   final Coordinates _coordinates;
 
@@ -281,50 +297,39 @@ class Units {
 
   Units(this.units);
 
-  List<Unit> get knights => units.where((e) => e.knight).toList();
-  List<Unit> get archers => units.where((e) => e.archer).toList();
-  List<Unit> get giants => units.where((e) => e.giant).toList();
+  int get count => units.length;
+
+  Units where(bool test(Unit element)) => Units(units.where((e) => test(e)).toList());
+
+  Units get knights => where((e) => e.knight);
+  Units get archers => where((e) => e.archer);
+  Units get giants => where((e) => e.giant);
   Unit get queen => units.firstWhere((e) => e.queen);
 
-  List<Unit> withType(UnitType type) => units.where((e) => e.type == type).toList();
+  Units withType(UnitType type) => where((e) => e.type == type);
 
-  int maxAllowed(UnitType type) {
+  Range rangeAllowed(UnitType type, World world) {
     switch (type) {
       case UnitType.GIANT:
-        return 2;
+        return Range(1, 2);
       case UnitType.KNIGHT:
-        return 10;
+        return Range(3, 10);
       case UnitType.ARCHER:
-        return 2;
+        return Range(1, 2);
       case UnitType.QUEEN:
-        return 1;
-      default:
-        throw "Unexpected unit type: ${type}";
-    }
-  }
-
-  int minAllowed(UnitType type) {
-    switch (type) {
-      case UnitType.GIANT:
-        return 1;
-      case UnitType.KNIGHT:
-        return 3;
-      case UnitType.ARCHER:
-        return 0;
-      case UnitType.QUEEN:
-        return 1;
+        return Range(1, 1);
       default:
         throw "Unexpected unit type: ${type}";
     }
   }
 
   /// Returns the types of units which are under the minimum numer of units allowed
-  List<UnitType> typesUnderMin() {
-    return unitTypes().where((type) => withType(type).length < minAllowed(type)).toList();
+  List<UnitType> typesUnderMin(World world) {
+    return unitTypes().where((type) => rangeAllowed(type, world).below(withType(type).count)).toList();
   }
 
-  List<UnitType> typesUnderMax() {
-    return unitTypes().where((type) => withType(type).length < maxAllowed(type)).toList();
+  List<UnitType> typesUnderMax(World world) {
+    return unitTypes().where((type) => rangeAllowed(type, world).contains(withType(type).count)).toList();
   }
 }
 
@@ -335,11 +340,52 @@ class Sites {
 
   int get count => sites.length;
 
-  List<BuildingSite> get barracks => sites.where((e) => e.barracks).toList();
-  List<BuildingSite> get knightBarracks => sites.where((e) => e.barracks && e.withType(UnitType.KNIGHT)).toList();
-  List<BuildingSite> get archerBarracks => sites.where((e) => e.barracks && e.withType(UnitType.ARCHER)).toList();
-  List<BuildingSite> get giantBarracks => sites.where((e) => e.barracks && e.withType(UnitType.GIANT)).toList();
-  List<BuildingSite> get towers => sites.where((e) => e.tower).toList();
+  Sites where(bool test(BuildingSite element)) => Sites(sites.where((e) => test(e)).toList());
+
+  Sites get friendly => where((e) => e.friendly);
+  Sites get enemy => where((e) => e.enemy);
+  Sites get neutral => where((e) => e.neutral);
+
+  Sites get barracks => where((e) => e.barracks);
+  Sites get knightBarracks => where((e) => e.barracks && e.withType(UnitType.KNIGHT));
+  Sites get archerBarracks => where((e) => e.barracks && e.withType(UnitType.ARCHER));
+  Sites get giantBarracks => where((e) => e.barracks && e.withType(UnitType.GIANT));
+  Sites get towers => where((e) => e.tower);
+
+  Range rangeAllowed(StructureType type, UnitType unitType, World world) {
+    switch (type) {
+      case StructureType.BARRACKS:
+        if (unitType == UnitType.ARCHER) {
+          return Range(0, 0);
+        } else if (unitType == UnitType.KNIGHT) {
+          return Range(1, 1);
+        } else if (unitType == UnitType.GIANT) {
+          // Only build a barracks of giants if the enemy has at least one tower
+          return (world.sites.enemy.towers.count > 0) ? Range(1, 1) : Range(
+              0, 0);
+        } else {
+          throw "Unexpected unit type: ${unitType}";
+        }
+        break;
+
+      case StructureType.TOWER:
+        return Range(3, 10);
+
+      default:
+        throw "Unexpected structure type: ${type}";
+    }
+  }
+}
+
+// ============= //
+// === World === //
+// ============= //
+
+class World {
+  final Units units;
+  final Sites sites;
+
+  World(this.units, this.sites);
 }
 
 void main() {
@@ -405,16 +451,18 @@ void main() {
       units.add(Unit.from(stdin));
     }
 
-    // Identify my own sites and units
-    var friendlySites = Sites(buildingSites.values.where((e) => e.friendly).toList());
-    var friendlyUnits = Units(units.where((e) => e.friendly).toList());
+    var allSites = Sites(buildingSites.values.toList());
+    var allUnits = Units(units);
 
-    // Identify the enemy units
-    var enemyUnits = Units(units.where((e) => e.enemy).toList());
+    var world = World(allUnits, allSites);
+
+    // Identify my own sites and units
+    var friendlySites = allSites.friendly;
+    var friendlyUnits = Units(units.where((e) => e.friendly).toList());
 
     // Identify the queens
     var queen = friendlyUnits.queen;
-    var enemyQueen = enemyUnits.queen;
+    var enemyQueen = allUnits.units.firstWhere((e) => e.enemy && e.queen);
 
     // Store the queen's start position
     if (startPosition == null) {
@@ -452,25 +500,25 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (friendlySites.knightBarracks.length < 1) {
-          // Build at least one barracks for knights
+        if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.KNIGHT, world).below(friendlySites.knightBarracks.count)) {
+          // Build one barracks for knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-        /* } else if (friendlySites.archerBarracks.length == 0) {
-          // Build at least one barracks for archers
-          print('BUILD ${touchedSiteId} BARRACKS-ARCHER'); */
-        } else if (friendlySites.giantBarracks.length < 1) {
-          // Build at least one barracks for giants
+        } else if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.ARCHER, world).below(friendlySites.archerBarracks.count)) {
+          // Build one barracks for archers
+          print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
+        } else if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.GIANT, world).below(friendlySites.giantBarracks.count)) {
+          // Build one barracks for giants
           print('BUILD ${touchedSiteId} BARRACKS-GIANT');
         } else {
-          // Build towers
+          // Else build a tower
           print('BUILD ${touchedSiteId} TOWER');
         }
       } else if (touchedSite.friendly) {
         // The site is already owned (by me). Move to another empty one
         trace("The site is friendly, searching new site ...");
 
-        // Identify the nearest empty sites
-        var nearestSites = buildingSites.values.where((e) => e.neutral).toList();
+        // Identify the nearest empty sites in my half of the map
+        var nearestSites = buildingSites.values.where((e) => e.neutral && (startPosition.distance(e.coordinates) <= (1920 / 2)) ).toList();
 
         // Sort the sites based on their distance from the queen's start position
         // This ensures the queen doesn't wander towards the enemy's territory
@@ -478,8 +526,8 @@ void main() {
 
         trace("Nearest sites:\n${nearestSites.join('\n')}");
 
-        if (nearestSites.isEmpty) {
-          // No empty site available, return to the start position
+        if (((friendlySites.towers.count >= 5) && (friendlySites.giantBarracks.count >= 1) && (friendlySites.knightBarracks.count >= 1)) || nearestSites.isEmpty) {
+          // We already built all our sites or no empty site available, return to the start position
           print('MOVE ${startPosition.x} ${startPosition.y}');
         } else {
           var nearestSite = nearestSites[0];
@@ -495,7 +543,7 @@ void main() {
     } else {
       // The queen is not touching a site
 
-      if (friendlySites.barracks.length >= (buildingSites.length / 2)) {
+      if (friendlySites.barracks.count >= (buildingSites.length / 2)) {
         // Don't build more than N/2 sites and enter escape mode by returning
         // to the start position
         // TODO Send the queen next to a defensive tower
@@ -524,7 +572,7 @@ void main() {
     }
 
     // Identify the barracks where I can train an army
-    var availableBarracks = friendlySites.barracks.where((e) => e.isAvailableForTraining()).toList();
+    var availableBarracks = friendlySites.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
 
     // Favor the barracks closest to the enemy queen to train armies
     availableBarracks.sort(compareDistanceFrom(enemyQueen));
@@ -550,12 +598,12 @@ void main() {
 
     // Consider first the units which are not present in enough numbers on the
     // ground
-    var candidateTypes = friendlyUnits.typesUnderMin();
+    var candidateTypes = friendlyUnits.typesUnderMin(world);
 
     if (candidateTypes.isEmpty) {
       // All the units are present in the min number, consider the ones which
       // are under the max number allowed
-      candidateTypes = friendlyUnits.typesUnderMax();
+      candidateTypes = friendlyUnits.typesUnderMax(world);
     }
 
     if (candidateTypes.isEmpty) {
@@ -567,7 +615,7 @@ void main() {
 
       // The order defines the precedence for creating units
       for (UnitType type in candidateTypes) {
-        var count = friendlyUnits.withType(type).length;
+        var count = friendlyUnits.withType(type).count;
 
         if (costOf(type) > gold) {
           // Not enough gold
@@ -579,13 +627,13 @@ void main() {
           continue;
         }
 
-        if (count < friendlyUnits.minAllowed(type)) {
+        if (friendlyUnits.rangeAllowed(type, world).below(count)) {
           // Not enough units of this type
           candidates.add(type);
           break;
         }
 
-        if (count >= friendlyUnits.maxAllowed(type)) {
+        if (friendlyUnits.rangeAllowed(type, world).above(count)) {
           // We already trained enough of those units
           continue;
         }
