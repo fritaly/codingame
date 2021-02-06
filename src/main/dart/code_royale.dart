@@ -313,7 +313,8 @@ class Units {
       case UnitType.GIANT:
         return Range(1, 2);
       case UnitType.KNIGHT:
-        return Range(3, 10);
+        // Knights are created per group of 4 !
+        return Range(12, 20);
       case UnitType.ARCHER:
         return Range(1, 2);
       case UnitType.QUEEN:
@@ -321,15 +322,6 @@ class Units {
       default:
         throw "Unexpected unit type: ${type}";
     }
-  }
-
-  /// Returns the types of units which are under the minimum numer of units allowed
-  List<UnitType> typesUnderMin(World world) {
-    return unitTypes().where((type) => rangeAllowed(type, world).below(withType(type).count)).toList();
-  }
-
-  List<UnitType> typesUnderMax(World world) {
-    return unitTypes().where((type) => rangeAllowed(type, world).contains(withType(type).count)).toList();
   }
 }
 
@@ -459,6 +451,10 @@ void main() {
     // Identify my own sites and units
     var friendlySites = allSites.friendly;
     var friendlyUnits = Units(units.where((e) => e.friendly).toList());
+
+    trace("Knights: ${friendlyUnits.knights.count}");
+    trace("Giants: ${friendlyUnits.giants.count}");
+    trace("Archers: ${friendlyUnits.archers.count}");
 
     // Identify the queens
     var queen = friendlyUnits.queen;
@@ -598,12 +594,22 @@ void main() {
 
     // Consider first the units which are not present in enough numbers on the
     // ground
-    var candidateTypes = friendlyUnits.typesUnderMin(world);
+    var candidateTypes = unitTypes().where((t) {
+      var count = friendlyUnits.withType(t).count;
+      var range = friendlyUnits.rangeAllowed(t, world);
+
+      return count < range.min;
+    });
 
     if (candidateTypes.isEmpty) {
       // All the units are present in the min number, consider the ones which
       // are under the max number allowed
-      candidateTypes = friendlyUnits.typesUnderMax(world);
+      candidateTypes = unitTypes().where((t) {
+        var count = friendlyUnits.withType(t).count;
+        var range = friendlyUnits.rangeAllowed(t, world);
+
+        return (count > range.min) && (count < range.max);
+      });
     }
 
     if (candidateTypes.isEmpty) {
