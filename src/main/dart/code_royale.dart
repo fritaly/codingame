@@ -293,7 +293,7 @@ class Units {
 
   Units withType(UnitType type) => where((e) => e.type == type);
 
-  Range rangeAllowed(UnitType type, World world) {
+  Range range(UnitType type, World world) {
     switch (type) {
       case UnitType.GIANT:
         return Range(1, 2);
@@ -329,7 +329,7 @@ class Sites {
   Sites get giantBarracks => where((e) => e.barracks && e.withType(UnitType.GIANT));
   Sites get towers => where((e) => e.tower);
 
-  Range rangeAllowed(StructureType type, UnitType unitType, World world) {
+  Range range(StructureType type, UnitType unitType, World world) {
     switch (type) {
       case StructureType.BARRACKS:
         if (unitType == UnitType.ARCHER) {
@@ -481,13 +481,13 @@ void main() {
         // No building, create one on the site
         trace("The site is neutral, building structure ...");
 
-        if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.KNIGHT, world).below(friendlySites.knightBarracks.count)) {
+        if (allSites.range(StructureType.BARRACKS, UnitType.KNIGHT, world).below(friendlySites.knightBarracks.count)) {
           // Build one barracks for knights
           print('BUILD ${touchedSiteId} BARRACKS-KNIGHT');
-        } else if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.ARCHER, world).below(friendlySites.archerBarracks.count)) {
+        } else if (allSites.range(StructureType.BARRACKS, UnitType.ARCHER, world).below(friendlySites.archerBarracks.count)) {
           // Build one barracks for archers
           print('BUILD ${touchedSiteId} BARRACKS-ARCHER');
-        } else if (allSites.rangeAllowed(StructureType.BARRACKS, UnitType.GIANT, world).below(friendlySites.giantBarracks.count)) {
+        } else if (allSites.range(StructureType.BARRACKS, UnitType.GIANT, world).below(friendlySites.giantBarracks.count)) {
           // Build one barracks for giants
           print('BUILD ${touchedSiteId} BARRACKS-GIANT');
         } else {
@@ -581,7 +581,7 @@ void main() {
     // ground
     var candidateTypes = UnitType.values().where((type) {
       var count = friendlyUnits.withType(type).count;
-      var range = friendlyUnits.rangeAllowed(type, world);
+      var range = friendlyUnits.range(type, world);
 
       return count < range.min;
     });
@@ -591,7 +591,7 @@ void main() {
       // are under the max number allowed
       candidateTypes = UnitType.values().where((type) {
         var count = friendlyUnits.withType(type).count;
-        var range = friendlyUnits.rangeAllowed(type, world);
+        var range = friendlyUnits.range(type, world);
 
         return (count > range.min) && (count < range.max);
       });
@@ -618,13 +618,13 @@ void main() {
           continue;
         }
 
-        if (friendlyUnits.rangeAllowed(type, world).below(count)) {
+        if (friendlyUnits.range(type, world).below(count)) {
           // Not enough units of this type
           candidates.add(type);
           break;
         }
 
-        if (friendlyUnits.rangeAllowed(type, world).above(count)) {
+        if (friendlyUnits.range(type, world).above(count)) {
           // We already trained enough of those units
           continue;
         }
