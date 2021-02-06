@@ -405,37 +405,12 @@ void main() {
       units.add(Unit.from(stdin));
     }
 
-    // Identify my own barracks
+    // Identify my own sites and units
     var friendlySites = Sites(buildingSites.values.where((e) => e.friendly).toList());
-    var knightBarracks = friendlySites.knightBarracks;
-    var archerBarracks = friendlySites.archerBarracks;
-    var giantBarracks = friendlySites.giantBarracks;
-    var towers = friendlySites.towers;
-
-    trace("Knight barracks: ${knightBarracks}");
-    trace("Archer barracks: ${archerBarracks}");
-    trace("Giant barracks: ${giantBarracks}");
-    trace("Towers: ${towers}");
-
-    // Identify my own units
     var friendlyUnits = Units(units.where((e) => e.friendly).toList());
-    var knights = friendlyUnits.knights;
-    var archers = friendlyUnits.archers;
-    var giants = friendlyUnits.giants;
-
-    trace("Knights: ${knights}");
-    trace("Archers: ${archers}");
-    trace("Giants: ${giants}");
 
     // Identify the enemy units
     var enemyUnits = Units(units.where((e) => e.enemy).toList());
-    var enemyKnights = enemyUnits.knights;
-    var enemyArchers = enemyUnits.archers;
-    var enemyGiants = enemyUnits.giants;
-
-    trace("Enemy knights: ${enemyKnights}");
-    trace("Enemy archers: ${enemyArchers}");
-    trace("Enemy giants: ${enemyArchers}");
 
     // Identify the queens
     var queen = friendlyUnits.queen;
@@ -447,11 +422,11 @@ void main() {
     }
 
     // Identify the enemy units near the queen
-    var nearbyEnemies = enemyUnits.units.where((e) => queen.distanceTo(e) < 300).toList();
+    /* var nearbyEnemies = enemyUnits.units.where((e) => queen.distanceTo(e) < 300).toList();
 
     trace("Nearby enemies: ${nearbyEnemies}");
 
-    /* if (!nearbyEnemies.isEmpty) {
+    if (!nearbyEnemies.isEmpty) {
       // The queen is under attack
       var nearestTowers = List<BuildingSite>.from(towers);
       nearestTowers.sort(compareDistanceFrom(queen));
