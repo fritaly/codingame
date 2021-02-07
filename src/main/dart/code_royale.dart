@@ -8,7 +8,11 @@ void trace(String message) {
 class Coordinates {
   final int x, y;
 
-  Coordinates(this.x, this.y);
+  static const CENTER = Coordinates(1920 ~/2, 1000 ~/2);
+  static const TOP_LEFT = Coordinates(0, 0);
+  static const BOTTOM_RIGHT = Coordinates(1919, 999);
+
+  const Coordinates(this.x, this.y);
 
   double distance(Coordinates other) {
     assert (other != null);
@@ -424,9 +428,9 @@ class Side {
   Coordinates retreatPosition() {
     switch (this) {
       case LEFT:
-        return Coordinates(0, 0); // top left
+        return Coordinates.TOP_LEFT;
       case RIGHT:
-        return Coordinates(1920, 1000); // bottom right
+        return Coordinates.BOTTOM_RIGHT;
       default:
         throw "Unexpected side: ${this}";
     }
