@@ -432,7 +432,10 @@ class World {
   final Coordinates startPosition;
   final int touchedSiteId;
 
-  World(this.units, this.sites, this.startPosition, this.touchedSiteId);
+  /// The amount of health lost by the queen this round
+  final int healthLost;
+
+  World(this.units, this.sites, this.startPosition, this.touchedSiteId, this.healthLost);
 
   Unit get queen => units.friendly.queen;
 
@@ -673,7 +676,7 @@ void main() {
     var allSites = Sites(buildingSites.values.toList());
     var allUnits = Units(units);
 
-    var world = World(allUnits, allSites, startPosition, touchedSiteId);
+    var world = World(allUnits, allSites, startPosition, touchedSiteId, healthLost);
 
     // Identify my own sites and units
     var friendlySites = allSites.friendly;
