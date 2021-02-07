@@ -370,6 +370,7 @@ class Units {
   Unit get queen => units.firstWhere((e) => e.queen);
 
   Units withType(UnitType type) => where((e) => e.type == type);
+  Units withSide(Side side) => where((e) => side.contains(e.coordinates));
 }
 
 class Sites {
@@ -392,6 +393,33 @@ class Sites {
   Sites get archerBarracks => where((e) => e.barracks && e.withType(UnitType.ARCHER));
   Sites get giantBarracks => where((e) => e.barracks && e.withType(UnitType.GIANT));
   Sites get towers => where((e) => e.tower);
+
+  Sites withSide(Side side) => where((e) => side.contains(e.coordinates));
+  Sites withType(BuildingType type) => where((e) => type.matches(e));
+}
+
+// ============ //
+// === Side === //
+// ============ //
+
+/// Enumerates the 2 sides on the map where the queen can spawn
+class Side {
+  final String name;
+  final int minX, maxX;
+
+  static const Side LEFT = Side('LEFT', 0, 1920 ~/ 2);
+  static const Side RIGHT = Side('RIGHT', 1920 ~/ 2, 1920);
+
+  static List<Side> values() => [ LEFT, RIGHT ];
+
+  const Side(this.name, this.minX, this.maxX);
+
+  bool contains(Coordinates coordinates) {
+    // Just check the X value
+    return (minX <= coordinates.x) && (coordinates.x < maxX);
+  }
+
+  Side opposite() => (this == LEFT) ? RIGHT : LEFT;
 }
 
 // ============= //
@@ -409,6 +437,9 @@ class World {
   Unit get queen => units.friendly.queen;
 
   BuildingSite touchedSite() => sites.sites.firstWhere((e) => e.id == touchedSiteId);
+
+  /// Returns on which side of the map the queen spawn
+  Side get side => Side.values().firstWhere((e) => e.contains(startPosition));
 
   Range range(BuildingType type) {
     switch (type) {
