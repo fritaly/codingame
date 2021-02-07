@@ -420,6 +420,17 @@ class Side {
   }
 
   Side opposite() => (this == LEFT) ? RIGHT : LEFT;
+
+  Coordinates retreatPosition() {
+    switch (this) {
+      case LEFT:
+        return Coordinates(0, 0); // top left
+      case RIGHT:
+        return Coordinates(1920, 1000); // bottom right
+      default:
+        throw "Unexpected side: ${this}";
+    }
+  }
 }
 
 // ============= //
@@ -491,6 +502,19 @@ class World {
 
 abstract class Mode {
   Mode run(World world);
+}
+
+class RetreatMode extends Mode {
+
+  @override
+  Mode run(World world) {
+    // Retreat to the corner of the map because the queen is under attack
+    var position = world.side.retreatPosition();
+
+    print('MOVE ${position.x} ${position.y}');
+
+    return this;
+  }
 }
 
 class NormalMode extends Mode {
