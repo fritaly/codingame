@@ -354,7 +354,7 @@ enum Owner {
 Owner ownerOf(int value) {
   switch (value) {
     case -1:
-      // No structure
+    // No structure
       return null;
     case 0:
       return Owner.FRIEND;
@@ -479,10 +479,10 @@ class World {
       case BuildingType.BARRACKS_ARCHER:
         return Range(0, 0);
       case BuildingType.BARRACKS_GIANT:
-        // Only build a barracks of giants if the enemy has at least one tower !
+      // Only build a barracks of giants if the enemy has at least one tower !
         return (sites.enemy.towers.count > 0) ? Range(1, 1) : Range(0, 0);
       case BuildingType.TOWER:
-        // Don't build more than 5 towers
+      // Don't build more than 5 towers
         return Range(3, 5);
 
       default:
@@ -523,12 +523,78 @@ abstract class Mode {
 
 class RetreatMode extends Mode {
 
+  /// The countdown before leaving this mode
+  int _countdown;
+
+  RetreatMode(this._countdown): assert (_countdown > 0);
+
+  @override
+  String toString() {
+    return "RetreatMode[countdown: ${_countdown}]";
+  }
+
   @override
   Mode run(World world) {
     // Retreat to the corner of the map because the queen is under attack
     var position = world.side.retreatPosition();
 
     print('MOVE ${position.x} ${position.y}');
+
+    _countdown--;
+
+    return (_countdown > 0) ? this : new NormalMode();
+  }
+}
+
+/// The queen's initial mode
+class InitialMode extends Mode {
+
+  /// The empty site where the queen will build the first barracks
+  BuildingSite _target;
+
+  @override
+  String toString() {
+    return "InitialMode[target: ${_target}]";
+  }
+
+  @override
+  Mode run(World world) {
+    var touchedSiteId = world.touchedSiteId;
+
+    if (_target == null) {
+      // Select an empty site (on my side) close to the center of the map where
+      // to build the first barracks: this shortens the distance to the enemy
+      // queen and therefore increases my units' life span
+      var emptySites = world.sites.neutral.withSide(world.side).sites;
+      emptySites.sort(compareDistanceTo(Coordinates.CENTER));
+
+      // Select this site as the first build site
+      _target = emptySites[0];
+
+      trace("Selected target ${_target}");
+    }
+
+    if (touchedSiteId != -1) {
+      var touchedSite = world.touchedSite();
+
+      if (_target.id == touchedSiteId) {
+        // The queen reached the target, build the first barracks
+        print(BuildingType.BARRACKS_KNIGHT.buildOrder(touchedSiteId));
+
+        // Switch to the normal mode
+        return new NormalMode();
+      }
+
+      if (touchedSite.neutral) {
+        // Not our target, build a tower nonetheless (it's free !)
+        print(BuildingType.TOWER.buildOrder(touchedSiteId));
+      } else {
+        // Not a neutral site (should not happen), keep moving
+        print('MOVE ${_target.x} ${_target.y}');
+      }
+    } else {
+      print('MOVE ${_target.x} ${_target.y}');
+    }
 
     return this;
   }
@@ -650,7 +716,7 @@ class NormalMode extends Mode {
       }
     }
 
-    return this;
+    return (world.healthLost > 2) ? new RetreatMode(5) : this;
   }
 }
 
@@ -679,7 +745,9 @@ void main() {
 
   var round = 1;
   var previousHealth = -1, healthLost = 0;
-  Mode mode = new NormalMode();
+  var random = Random();
+
+  Mode mode = new InitialMode();
 
   // Game loop
   while (true) {
@@ -760,7 +828,7 @@ void main() {
     // Favor the barracks closest to the enemy queen to train armies
     availableBarracks.sort(compareDistanceTo(enemyQueen.coordinates));
 
-    trace("Barracks: ${availableBarracks}");
+    trace("- Barracks: ${availableBarracks.join('\n')}");
 
     var siteIds = <int>[];
 
@@ -776,7 +844,7 @@ void main() {
         .map((type) => world.unitStatus(type)).toList();
     statuses.shuffle(random);
 
-    trace("Unit statuses: ${statuses.join('\n')}");
+    trace("- Unit statuses: ${statuses.join('\n')}");
 
     // Wait until we have enough gold to train all the candidate types of units
     // otherwise we'll end up always training the cheapest ones (the knights)
@@ -787,12 +855,20 @@ void main() {
 
         // Check first whether some units must be trained
         for (var status in statuses) {
+          trace("Processing ${status} ...");
+
           // Barracks available to train this type of unit ?
-          var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType)).toList();
+          var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType) && !siteIds.contains(e.id)).toList();
+
+          trace("Barracks: ${barracks.join('\n')}");
 
           if (!barracks.isEmpty && status.mustTrain() && (gold >= status.unitType.cost)) {
             // Not enough units of this type, train one
-            siteIds.add(barracks.removeAt(0).id);
+            var siteId = barracks.removeAt(0).id;
+
+            trace("Training ${status.unitType.name} in ${siteId} ...");
+
+            siteIds.add(siteId);
             gold -= status.unitType.cost;
             trained = true;
             break;
@@ -802,12 +878,20 @@ void main() {
         if (!trained) {
           // Check next whether some units can be trained
           for (var status in statuses) {
+            trace("Processing ${status} ...");
+
             // Barracks available to train this type of unit ?
-            var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType)).toList();
+            var barracks = availableBarracks.where((e) => (e.getTrainedUnitType() == status.unitType) && !siteIds.contains(e.id)).toList();
+
+            trace("Barracks: ${barracks.join('\n')}");
 
             if (!barracks.isEmpty && status.canTrain() && (gold >= status.unitType.cost)) {
               // Not enough units of this type, train one
-              siteIds.add(barracks.removeAt(0).id);
+              var siteId = barracks.removeAt(0).id;
+
+              trace("Training ${status.unitType.name} in ${siteId} ...");
+
+              siteIds.add(siteId);
               gold -= status.unitType.cost;
               trained = true;
               break;
@@ -817,6 +901,7 @@ void main() {
 
         if (!trained) {
           // All the possible units have been trained
+          trace("No unit trained, breaking ...");
           break;
         }
       }
