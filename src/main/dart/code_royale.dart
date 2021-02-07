@@ -348,7 +348,7 @@ Owner ownerOf(int value) {
   }
 }
 
-Comparator<Entity> compareDistanceFrom(Coordinates reference) {
+Comparator<Entity> compareDistanceTo(Coordinates reference) {
   return (a, b) => a.distanceTo(reference).compareTo(b.distanceTo(reference));
 }
 
@@ -408,6 +408,8 @@ class World {
 
   Unit get queen => units.friendly.queen;
 
+  BuildingSite touchedSite() => sites.sites.firstWhere((e) => e.id == touchedSiteId);
+
   Range range(BuildingType type) {
     switch (type) {
       case BuildingType.BARRACKS_KNIGHT:
@@ -454,13 +456,13 @@ class World {
 }
 
 abstract class Mode {
-  void run(World world);
+  Mode run(World world);
 }
 
 class NormalMode extends Mode {
 
   @override
-  void run(World world) {
+  Mode run(World world) {
     var startPosition = world.startPosition;
     var touchedSiteId = world.touchedSiteId;
 
@@ -556,7 +558,7 @@ class NormalMode extends Mode {
         trace("Nearest sites:\n${emptySites.join('\n')}");
 
         if (!emptySites.isEmpty) {
-          emptySites.sort(compareDistanceFrom(world.queen.coordinates));
+          emptySites.sort(compareDistanceTo(world.queen.coordinates));
 
           var nearestSite = emptySites[0];
 
@@ -567,6 +569,8 @@ class NormalMode extends Mode {
         }
       }
     }
+
+    return this;
   }
 }
 
@@ -595,7 +599,7 @@ void main() {
 
   var round = 1;
   var previousHealth = -1, healthLost = 0;
-  var mode = new NormalMode();
+  Mode mode = new NormalMode();
 
   // Game loop
   while (true) {
@@ -662,14 +666,16 @@ void main() {
       startPosition = queen.coordinates;
     }
 
-    // Delegate to the current mode
-    mode.run(world);
+    trace("Invoking mode ${mode} ...");
+
+    // Delegate to the current mode and update the current mode
+    mode = mode.run(world);
 
     // Identify the barracks where I can train an army
     var availableBarracks = friendlySites.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
 
     // Favor the barracks closest to the enemy queen to train armies
-    availableBarracks.sort(compareDistanceFrom(enemyQueen.coordinates));
+    availableBarracks.sort(compareDistanceTo(enemyQueen.coordinates));
 
     trace("Barracks: ${availableBarracks}");
 
