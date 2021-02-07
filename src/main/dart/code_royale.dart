@@ -37,7 +37,7 @@ class Range {
 
   @override
   String toString() {
-    return "Range[${min}-${max}]";
+    return "[${min}-${max}]";
   }
 }
 
@@ -61,6 +61,11 @@ class BuildingStatus {
   /// Tells whether one building can be built because the maximum number hasn't
   /// yet been reached
   bool canBuild() => (range.min <= count) && (count < range.max);
+
+  @override
+  String toString() {
+    return "BuildingStatus[type: ${buildingType.name}, count: ${count}, range: ${range}]";
+  }
 }
 
 /// Store all the information about a given type of unit to drive the decision
@@ -83,6 +88,11 @@ class UnitStatus {
   /// Tells whether one unit can be trained because the maximum number hasn't
   /// yet been reached
   bool canTrain() => (range.min <= count) && (count < range.max);
+
+  @override
+  String toString() {
+    return "UnitStatus[type: ${unitType.name}, count: ${count}, range: ${range}]";
+  }
 }
 
 abstract class Entity {
@@ -202,15 +212,16 @@ class BuildingSite extends Entity {
 class BuildingType {
   final StructureType structureType;
   final UnitType unitType;
+  final String name;
 
-  static const BuildingType BARRACKS_KNIGHT = BuildingType(StructureType.BARRACKS, UnitType.KNIGHT);
-  static const BuildingType BARRACKS_ARCHER = BuildingType(StructureType.BARRACKS, UnitType.ARCHER);
-  static const BuildingType BARRACKS_GIANT = BuildingType(StructureType.BARRACKS, UnitType.GIANT);
-  static const BuildingType TOWER = BuildingType(StructureType.TOWER, null);
+  static const BuildingType BARRACKS_KNIGHT = BuildingType(StructureType.BARRACKS, UnitType.KNIGHT, 'BARRACKS_KNIGHT');
+  static const BuildingType BARRACKS_ARCHER = BuildingType(StructureType.BARRACKS, UnitType.ARCHER, 'BARRACKS_ARCHER');
+  static const BuildingType BARRACKS_GIANT = BuildingType(StructureType.BARRACKS, UnitType.GIANT, 'BARRACKS_GIANT');
+  static const BuildingType TOWER = BuildingType(StructureType.TOWER, null, 'TOWER');
 
   static List<BuildingType> values() => [ BARRACKS_KNIGHT, BARRACKS_ARCHER, BARRACKS_GIANT, TOWER ];
 
-  const BuildingType(this.structureType, this.unitType);
+  const BuildingType(this.structureType, this.unitType, this.name);
 
   bool matches(BuildingSite site) => (site.type == structureType) && (site.getTrainedUnitType() == unitType);
 
@@ -283,15 +294,17 @@ class UnitType {
   /// The cost (in gold) for training a unit with the given type
   final int cost;
 
-  static const UnitType QUEEN = UnitType(-1, 0);
-  static const UnitType KNIGHT = UnitType(0, 80);
-  static const UnitType ARCHER = UnitType(1, 100);
-  static const UnitType GIANT = UnitType(2, 140);
+  final String name;
+
+  static const UnitType QUEEN = UnitType(-1, 0, 'QUEEN');
+  static const UnitType KNIGHT = UnitType(0, 80, 'KNIGHT');
+  static const UnitType ARCHER = UnitType(1, 100, 'ARCHER');
+  static const UnitType GIANT = UnitType(2, 140, 'GIANT');
 
   /// Only return the types for the units which can be trained in barracks
   static List<UnitType> values() => [ KNIGHT, ARCHER, GIANT ];
 
-  const UnitType(this.value, this.cost);
+  const UnitType(this.value, this.cost, this.name);
 
   factory UnitType.valueOf(int value) {
     switch (value) {
@@ -524,6 +537,11 @@ class RetreatMode extends Mode {
 class NormalMode extends Mode {
 
   @override
+  String toString() {
+    return "NormalMode";
+  }
+
+  @override
   Mode run(World world) {
     var startPosition = world.startPosition;
     var touchedSiteId = world.touchedSiteId;
@@ -704,14 +722,14 @@ void main() {
     var allSites = Sites(buildingSites.values.toList());
     var allUnits = Units(units);
 
-    var world = World(allUnits, allSites, startPosition, touchedSiteId, healthLost);
-
-    // Identify my own sites and units
-    var friendlySites = allSites.friendly;
-
     // Identify the queens
     var queen = allUnits.friendly.queen;
     var enemyQueen = allUnits.enemy.queen;
+
+    // Store the queen's start position
+    if (startPosition == null) {
+      startPosition = queen.coordinates;
+    }
 
     if (previousHealth != -1) {
       healthLost = previousHealth - queen.health;
@@ -723,18 +741,21 @@ void main() {
 
     previousHealth = queen.health;
 
-    // Store the queen's start position
-    if (startPosition == null) {
-      startPosition = queen.coordinates;
-    }
-
     trace("Invoking mode ${mode} ...");
 
+    var world = World(allUnits, allSites, startPosition, touchedSiteId, healthLost);
+
     // Delegate to the current mode and update the current mode
-    mode = mode.run(world);
+    var newMode = mode.run(world);
+
+    if (newMode != mode) {
+      trace("Switching to mode ${newMode} ...");
+    }
+
+    mode = newMode;
 
     // Identify the barracks where I can train an army
-    var availableBarracks = friendlySites.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
+    var availableBarracks = world.sites.friendly.barracks.sites.where((e) => e.isAvailableForTraining()).toList();
 
     // Favor the barracks closest to the enemy queen to train armies
     availableBarracks.sort(compareDistanceTo(enemyQueen.coordinates));
@@ -742,8 +763,6 @@ void main() {
     trace("Barracks: ${availableBarracks}");
 
     var siteIds = <int>[];
-
-    var random = Random();
 
     // Try to train armies based on the remaining gold and available barracks
     // Only decide when we have enough money to afford all the unit types
@@ -756,6 +775,8 @@ void main() {
         .where((type) => availableBarracks.any((e) => e.getTrainedUnitType() == type))
         .map((type) => world.unitStatus(type)).toList();
     statuses.shuffle(random);
+
+    trace("Unit statuses: ${statuses.join('\n')}");
 
     // Wait until we have enough gold to train all the candidate types of units
     // otherwise we'll end up always training the cheapest ones (the knights)
