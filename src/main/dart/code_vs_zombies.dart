@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'dart:math';
 
 void trace(String message) {
@@ -36,18 +35,37 @@ class Position {
 abstract class Entity {
   final Position position;
 
-  Entity(this.position);
+  /// The entity's speed (in units per turn)
+  final int speed;
+
+  Entity(this.position, this.speed);
 
   int get x => position.x;
   int get y => position.y;
 
   double distanceTo(Position target) => this.position.distance(target);
+
+  /// Returns the estimated time for the entity to reach the target position
+  double estimatedTimeTo(Position target) => distanceTo(target) / speed;
+}
+
+class Player extends Entity {
+
+  Player(Position position): super(position, 1000);
+
+  factory Player.read(Stdin stdin) {
+    var inputs = stdin.readLineSync().split(' ').map((e) => int.parse(e)).toList();
+
+    trace("${inputs.join(' ')}");
+
+    return Player(Position(inputs[0], inputs[1]));
+  }
 }
 
 class Human extends Entity {
   final int id;
 
-  Human(this.id, Position position): super(position);
+  Human(this.id, Position position): super(position, 0);
 
   factory Human.read(Stdin stdin) {
     var inputs = stdin.readLineSync().split(' ').map((e) => int.parse(e)).toList();
@@ -62,7 +80,7 @@ class Zombie extends Entity {
   final int id;
   final Position nextPosition;
 
-  Zombie(this.id, Position position, this.nextPosition): super(position);
+  Zombie(this.id, Position position, this.nextPosition): super(position, 400);
 
   factory Zombie.read(Stdin stdin) {
     var inputs = stdin.readLineSync().split(' ').map((e) => int.parse(e)).toList();
@@ -108,11 +126,7 @@ class Pair implements Comparable<Pair> {
 void main() {
 
   while (true) {
-    var inputs = stdin.readLineSync().split(' ').map((e) => int.parse(e)).toList();
-
-    trace("${inputs.join(' ')}");
-
-    var playerPosition = Position(inputs[0], inputs[1]);
+    var player = Player.read(stdin);
 
     var humans = <Human>[];
 
@@ -130,12 +144,12 @@ void main() {
       zombies.add(Zombie.read(stdin));
     }
 
-    zombies.sort(compareDistanceTo(playerPosition));
+    zombies.sort(compareDistanceTo(player.position));
 
     if (!zombies.isEmpty) {
       var nearestZombie = zombies[0];
 
-      var distance = nearestZombie.distanceTo(playerPosition);
+      var distance = nearestZombie.distanceTo(player.position);
 
       trace("Distance to nearest zombie: ${distance.toStringAsFixed(0)}");
     }
@@ -157,7 +171,7 @@ void main() {
       trace("Selection: ${selection}");
 
       // Who's the closest ? the human or the zombie ?
-      var target = selection.closestTo(playerPosition);
+      var target = selection.closestTo(player.position);
 
       if (target is Zombie) {
         // Anticipate the next zombie move and go where he's heading
@@ -167,7 +181,7 @@ void main() {
         print('${target.x} ${target.y}');
       }
     } else {
-      print('${playerPosition.x} ${playerPosition.y}');
+      print('${player.x} ${player.y}');
     }
   }
 }
