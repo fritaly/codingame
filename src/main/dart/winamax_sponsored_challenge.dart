@@ -32,38 +32,13 @@ class Position {
 
   Direction directionTo(Position target) {
     // The 2 positions must be aligned
-    assert ((this.x == target.x) || (this.y == target.y));
+    assert (isAligned(target));
 
     if (this.x == target.x) {
       return (this.y > target.y) ? Direction.UP : Direction.DOWN;
     }
 
     return (this.x > target.x) ? Direction.LEFT : Direction.RIGHT;
-  }
-
-  List<Position> pathTo(Position target) {
-    // The 2 positions must be aligned
-    assert ((this.x == target.x) || (this.y == target.y));
-
-    var steps = <Position>[];
-
-    if (this.x == target.x) {
-      // Aligned along X
-      var minY = min(this.y, target.y), maxY = max(this.y, target.y);
-
-      for (var current = minY; current <= maxY; current++) {
-        steps.add(Position(x, current));
-      }
-    } else {
-      // Aligned along Y
-      var minX = min(this.x, target.x), maxX = max(this.x, target.x);
-
-      for (var current = minX; current <= maxX; current++) {
-        steps.add(Position(current, y));
-      }
-    }
-
-    return steps;
   }
 
   @override
@@ -141,8 +116,29 @@ class Segment {
 
   Direction get direction => start.directionTo(end);
 
-  /// Returns a list containing all the positions traversed by this segment
-  List<Position> get positions => start.pathTo(end);
+  /// Returns a list of positions corresponding to the positions traversed by
+  /// the segment
+  List<Position> expand() {
+    var steps = <Position>[];
+
+    if (start.x == end.x) {
+      // Aligned along X
+      var minY = min(start.y, end.y), maxY = max(start.y, end.y);
+
+      for (var current = minY; current <= maxY; current++) {
+        steps.add(Position(start.x, current));
+      }
+    } else {
+      // Aligned along Y
+      var minX = min(start.x, end.x), maxX = max(start.x, end.x);
+
+      for (var current = minX; current <= maxX; current++) {
+        steps.add(Position(current, start.y));
+      }
+    }
+
+    return steps;
+  }
 
   int get length {
     if (start.x == end.x) {
@@ -224,15 +220,23 @@ class Grid {
   }
 
   /// Returns all the paths leading to a hole from the given start position and
-  /// distance
-  List<Path> findPaths(Position startPosition, int distance) {
-    assert (distance > 0);
+  /// number of remaining shots
+  List<Path> findPaths(Position startPosition, int shots) {
+    assert (shots > 0);
 
-    // Filter the invalid positions (out of the map) or leading to water
-    var positions = startPosition.all(distance).where((p) => exists(p) && !isWater(p)).toList();
+    // Filter the invalid positions (out of the map), leading to water, crossing
+    // another path
+    var positions = startPosition.all(shots).where((p) => exists(p)
+        && !isWater(p)
+        && !Segment(startPosition, p).expand().any((e) => isArrow(charAt(e)))
+    ).toList();
 
-    if (distance == 1) {
-      // Only return the positions leading to a hold
+    if (positions.isEmpty) {
+      return [];
+    }
+
+    if (shots == 1) {
+      // Only return the positions leading to a hole
       return positions.where((p) => isHole(p)).map((p) => Path([ startPosition, p ])).toList(growable: false);
     }
 
@@ -243,7 +247,7 @@ class Grid {
         paths.add(Path([ startPosition, position ]));
       } else {
         // Explore the next positions
-        for (var subPath in findPaths(position, distance - 1)) {
+        for (var subPath in findPaths(position, shots - 1)) {
           if (isHole(subPath.end)) {
             // Only return the paths leading to a hole
             paths.add(Path([ startPosition, ...subPath.waypoints ]));
@@ -323,7 +327,7 @@ class Grid {
 
     trace("Drawing segment: ${segment} / direction=${direction}");
 
-    for (var position in segment.positions) {
+    for (var position in segment.expand()) {
       var char = charAt(position);
 
       if ((position == segment.end) && (char == 'H')) {
