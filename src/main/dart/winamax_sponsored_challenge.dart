@@ -19,18 +19,18 @@ class Direction {
   String toString() => "${name}";
 }
 
-// =================== //
-// === Coordinates === //
-// =================== //
+// ================ //
+// === Position === //
+// ================ //
 
-class Coordinates {
+class Position {
   final int x, y;
 
-  Coordinates(this.x, this.y);
+  Position(this.x, this.y);
 
-  bool isAligned(Coordinates other) => (this.x == other.x) || (this.y == other.y);
+  bool isAligned(Position other) => (this.x == other.x) || (this.y == other.y);
 
-  Direction directionTo(Coordinates target) {
+  Direction directionTo(Position target) {
     // The 2 positions must be aligned
     assert ((this.x == target.x) || (this.y == target.y));
 
@@ -41,25 +41,25 @@ class Coordinates {
     return (this.x > target.x) ? Direction.LEFT : Direction.RIGHT;
   }
 
-  List<Coordinates> pathTo(Coordinates target) {
+  List<Position> pathTo(Position target) {
     // The 2 positions must be aligned
     assert ((this.x == target.x) || (this.y == target.y));
 
-    var steps = <Coordinates>[];
+    var steps = <Position>[];
 
     if (this.x == target.x) {
       // Aligned along X
       var minY = min(this.y, target.y), maxY = max(this.y, target.y);
 
       for (var current = minY; current <= maxY; current++) {
-        steps.add(Coordinates(x, current));
+        steps.add(Position(x, current));
       }
     } else {
       // Aligned along Y
       var minX = min(this.x, target.x), maxX = max(this.x, target.x);
 
       for (var current = minX; current <= maxX; current++) {
-        steps.add(Coordinates(current, y));
+        steps.add(Position(current, y));
       }
     }
 
@@ -68,7 +68,7 @@ class Coordinates {
 
   @override
   bool operator ==(Object other) {
-    if (other is Coordinates) {
+    if (other is Position) {
       return (this.x == other.x) && (this.y == other.y);
     }
 
@@ -84,20 +84,76 @@ class Coordinates {
     return hash;
   }
 
-  /// Returns the coordinates n steps upwards
-  Coordinates up(int n) => Coordinates(x, y - n);
+  /// Returns the position n steps upwards
+  Position up(int n) => Position(x, y - n);
 
-  /// Returns the coordinates n steps downwards
-  Coordinates down(int n) => Coordinates(x, y + n);
+  /// Returns the position n steps downwards
+  Position down(int n) => Position(x, y + n);
 
-  /// Returns the coordinates n steps leftwards
-  Coordinates left(int n) => Coordinates(x - n, y);
+  /// Returns the position n steps leftwards
+  Position left(int n) => Position(x - n, y);
 
-  /// Returns the coordinates n steps rightwards
-  Coordinates right(int n) => Coordinates(x + n, y);
+  /// Returns the position n steps rightwards
+  Position right(int n) => Position(x + n, y);
+
+  /// Returns all the positions at the given distance from this position
+  List<Position> all(int n) => [ up(n), left(n), down(n), right(n) ];
 
   @override
   String toString() => "(${x}, ${y})";
+}
+
+// ============ //
+// === Path === //
+// ============ //
+
+class Path {
+  final List<Position> waypoints;
+
+  Path(this.waypoints);
+
+  Position get end => waypoints.last;
+
+  List<Segment> get segments {
+    var result = <Segment>[];
+
+    var previous = null;
+
+    for (var current in waypoints) {
+      if (previous != null) {
+        result.add(Segment(previous, current));
+      }
+
+      previous = current;
+    }
+
+    return result;
+  }
+
+  @override
+  String toString() => "[${waypoints.join(' -> ')}]";
+}
+
+class Segment {
+  final Position start, end;
+
+  Segment(this.start, this.end): assert (start.isAligned(end));
+
+  Direction get direction => start.directionTo(end);
+
+  /// Returns a list containing all the positions traversed by this segment
+  List<Position> get positions => start.pathTo(end);
+
+  int get length {
+    if (start.x == end.x) {
+      return (end.y - start.y).abs();
+    }
+
+    return (end.x - start.x).abs();
+  }
+
+  @override
+  String toString() => "[${start} -> ${end}]";
 }
 
 // ============ //
@@ -106,12 +162,12 @@ class Coordinates {
 
 class Ball implements Comparable<Ball> {
   final int shots;
-  final Coordinates coordinates;
+  final Position position;
 
-  Ball(this.shots, this.coordinates);
+  Ball(this.shots, this.position);
 
   @override
-  String toString() => "Ball[${shots}, ${coordinates}]";
+  String toString() => "Ball[${shots}, ${position}]";
 
   @override
   int compareTo(Ball that) {
@@ -125,12 +181,12 @@ class Ball implements Comparable<Ball> {
 // ============ //
 
 class Hole {
-  final Coordinates coordinates;
+  final Position position;
 
-  Hole(this.coordinates);
+  Hole(this.position);
 
   @override
-  String toString() => "Hole[${coordinates}]";
+  String toString() => "Hole[${position}]";
 }
 
 // ============ //
@@ -149,58 +205,54 @@ class Grid {
 
   bool isValidX(int x) => (0 <= x) && (x < width);
   bool isValidY(int y) => (0 <= y) && (y < height);
-  bool exists(Coordinates coordinates) => isValidX(coordinates.x) && isValidY(coordinates.y);
+  bool exists(Position position) => isValidX(position.x) && isValidY(position.y);
 
-  String charAt(Coordinates coordinates) => rows[coordinates.y][coordinates.x];
+  String charAt(Position position) => rows[position.y][position.x];
 
-  /// Updates the character at the given coordinates
-  void setChar(Coordinates coordinates, String char) {
-    assert ((coordinates != null) && exists(coordinates));
+  bool isHole(Position position) => (charAt(position) == 'H');
+  bool isWater(Position position) => (charAt(position) == 'X');
+
+  /// Updates the character at the given position
+  void setChar(Position position, String char) {
+    assert ((position != null) && exists(position));
     assert ((char != null) && (char.length == 1));
 
-    var x = coordinates.x, y = coordinates.y;
+    var x = position.x, y = position.y;
     var row = rows[y];
 
     rows[y] = row.substring(0, x) + char + row.substring(x + 1);
   }
 
-  bool isPathPossible(Coordinates source, Coordinates target) {
-    assert ((source != null) && (target != null));
+  /// Returns all the paths leading to a hole from the given start position and
+  /// distance
+  List<Path> findPaths(Position startPosition, int distance) {
+    assert (distance > 0);
 
-    // Resolve the path from the source to the target position
-    var path = source.pathTo(target);
+    // Filter the invalid positions (out of the map) or leading to water
+    var positions = startPosition.all(distance).where((p) => exists(p) && !isWater(p)).toList();
 
-    // Check all the intermediary cells along the path
-    for (var step in path) {
-      var char = charAt(target);
+    if (distance == 1) {
+      // Only return the positions leading to a hold
+      return positions.where((p) => isHole(p)).map((p) => Path([ startPosition, p ])).toList(growable: false);
+    }
 
-      if (isArrow(char)) {
-        // Not allowed to cross another path
-        return false;
-      }
-      if (char == 'X') {
-        // Only forbidden for the target cell
-        if (step == target) {
-          // The ball lands in the water
-          return false;
-        } else {
-          // The ball flies over the water
-        }
-      }
-      if (char == '!') {
-        // TODO Can a ball fly over a hole ?
-        return false;
-      }
-      if (isNumeric(char)) {
-        if (step == target) {
-          // Ball present on the target cell
-          return false;
+    var paths = <Path>[];
+
+    for (var position in positions) {
+      if (isHole(position)) {
+        paths.add(Path([ startPosition, position ]));
+      } else {
+        // Explore the next positions
+        for (var subPath in findPaths(position, distance - 1)) {
+          if (isHole(subPath.end)) {
+            // Only return the paths leading to a hole
+            paths.add(Path([ startPosition, ...subPath.waypoints ]));
+          }
         }
       }
     }
 
-    // The path is valid
-    return true;
+    return paths;
   }
 
   List<Ball> getBalls() {
@@ -211,7 +263,7 @@ class Grid {
         var char = rows[y][x];
 
         if (isNumeric(char)) {
-          balls.add(Ball(int.parse(char), Coordinates(x, y)));
+          balls.add(Ball(int.parse(char), Position(x, y)));
         }
       }
     }
@@ -227,7 +279,7 @@ class Grid {
         var char = rows[y][x];
 
         if (char == 'H') {
-          holes.add(Hole(Coordinates(x, y)));
+          holes.add(Hole(Position(x, y)));
         }
       }
     }
@@ -263,24 +315,26 @@ class Grid {
     return true;
   }
 
-  Grid drawPath(Coordinates source, Coordinates target) {
-    assert ((source != null) && (target != null) && source.isAligned(target));
+  Grid drawSegment(Segment segment) {
+    assert (segment != null);
 
     var clone = Grid(List.from(rows));
-    var path = source.pathTo(target);
-    var direction = source.directionTo(target);
+    var direction = segment.direction;
 
-    trace("Drawing path: source=${source}, target=${target} -> path=${path} / direction=${direction}");
+    trace("Drawing segment: ${segment} / direction=${direction}");
 
-    for (var step in path) {
-      var char = charAt(step);
+    for (var position in segment.positions) {
+      var char = charAt(position);
 
-      if ((step == target) && (char == 'H')) {
+      if ((position == segment.end) && (char == 'H')) {
         // That's a hole, change the character to '!' to indicate the hole is
         // used
-        clone.setChar(step, '!');
+        clone.setChar(position, '!');
+      } else if (isArrow(char)) {
+        // There is an arrow, path isn't valid
+        return null;
       } else {
-        clone.setChar(step, direction.symbol);
+        clone.setChar(position, direction.symbol);
       }
     }
 
@@ -301,43 +355,52 @@ class Grid {
     for (var ball in balls) {
       trace("Processing ${ball} ...");
 
-      var coords = ball.coordinates, distance = ball.shots;
+      // Find all the paths leading to a hole
+      var paths = findPaths(ball.position, ball.shots);
 
-      // Find the positions the ball can reach
-      var candidates = [ coords.up(distance), coords.down(distance), coords.left(distance), coords.right(distance) ];
+      trace("Found paths: ${paths}");
 
-      // Keep the valid positions (in the map) and those for which the path is
-      // possible
-      candidates = candidates.where((c) => exists(c) && isPathPossible(coords, c)).toList();
-
-      trace("The ball ${ball} can go to ${candidates}");
-
-      if (candidates.isEmpty) {
-        // No possible solution for this grid
+      if (paths.isEmpty) {
+        // This ball cannot reach a hole
         return null;
       }
 
-      // Recursively test each possibility
-      for (var candidate in candidates) {
-        trace("");
-        trace("=== Trying ${ball} in ${candidate} ... ===");
-        trace("");
-        trace("Before:\n\n${this}\n");
+      // Test each possibility
+      for (var path in paths) {
+        trace("=== Testing ${ball} with ${path} ... ===");
 
-        var child = drawPath(coords, candidate);
+        var segments = path.segments;
 
-        trace("After:\n\n${child}\n");
+        var fork = this, distance = ball.shots;
 
-        if (child.charAt(candidate) == '!') {
-          // The ball fell into a hole
-        } else {
-          // Place the ball to the new location with a decreased distance
-          child.setChar(candidate, "${distance - 1}");
+        for (var segment in segments) {
+          trace("");
+          trace("Before:\n\n${fork}\n");
+
+          fork = fork.drawSegment(segment);
+
+          if (fork == null) {
+            break;
+          }
+
+          // Place the ball where it arrived
+          fork.setChar(segment.end, "${--distance}");
+
+          trace("After:\n\n${fork}\n");
         }
 
-        trace("After (2):\n\n${child}\n");
+        if (fork == null) {
+          trace("The path ${path} isn't valid");
 
-        var solution = child.solve();
+          continue;
+        }
+
+        // Change 'H' into '!' to indicate the hole is used
+        fork.setChar(path.end, '!');
+
+        trace("After (2):\n\n${fork}\n");
+
+        var solution = fork.solve();
 
         if (solution != null) {
           // Found a solution, return it
