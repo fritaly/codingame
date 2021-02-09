@@ -173,23 +173,20 @@ class Ball implements Comparable<Ball> {
 }
 
 // ============ //
-// === Hole === //
-// ============ //
-
-class Hole {
-  final Position position;
-
-  Hole(this.position);
-
-  @override
-  String toString() => "Hole[${position}]";
-}
-
-// ============ //
 // === Grid === //
 // ============ //
 
-bool isArrow(String char) => [ '^', '<', 'v', '>' ].any((c) => (c == char));
+bool isArrow(String char) {
+  switch (char) {
+    case '^':
+    case '<':
+    case '>':
+    case 'v':
+      return true;
+    default:
+      return false;
+  }
+}
 
 class Grid {
   final List<String> rows;
@@ -273,22 +270,6 @@ class Grid {
     }
 
     return balls;
-  }
-
-  List<Hole> getHoles() {
-    var holes = <Hole>[];
-
-    for (var y = 0; y < height; y++) {
-      for (var x = 0; x < width; x++) {
-        var char = rows[y][x];
-
-        if (char == 'H') {
-          holes.add(Hole(Position(x, y)));
-        }
-      }
-    }
-
-    return holes;
   }
 
   @override
