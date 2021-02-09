@@ -59,20 +59,8 @@ class Position {
     return hash;
   }
 
-  /// Returns the position n steps upwards
-  Position up(int n) => Position(x, y - n);
-
-  /// Returns the position n steps downwards
-  Position down(int n) => Position(x, y + n);
-
-  /// Returns the position n steps leftwards
-  Position left(int n) => Position(x - n, y);
-
-  /// Returns the position n steps rightwards
-  Position right(int n) => Position(x + n, y);
-
   /// Returns all the positions at the given distance from this position
-  List<Position> all(int n) => [ up(n), left(n), down(n), right(n) ];
+  List<Position> all(int n) => [ Position(x, y - n), Position(x - n, y), Position(x, y + n), Position(x + n, y) ];
 
   @override
   String toString() => "(${x}, ${y})";
