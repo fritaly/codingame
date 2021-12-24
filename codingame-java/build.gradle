@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+    id 'com.github.hierynomus.license'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+license {
+    header = rootProject.file('LICENSE')
+}

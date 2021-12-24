@@ -1,1 +1,3 @@
+include ':codingame-java'
+
 rootProject.name = 'codingame'
