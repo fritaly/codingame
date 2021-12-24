@@ -1,3 +1,21 @@
 plugins {
-    id 'base'
+    id 'java' // Use the 'java' plugin because there is no dart available
+    id 'com.github.hierynomus.license'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/dart' ]
+        }
+    }
+}
+
+license {
+    header = rootProject.file('LICENSE')
+
+    mapping {
+        // See https://github.com/hierynomus/license-gradle-plugin#supported-file-types
+        dart = 'SLASHSTAR_STYLE'
+    }
 }
