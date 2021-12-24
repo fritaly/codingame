@@ -1,18 +1,6 @@
 plugins {
-    id 'groovy'
+    id 'base'
     id 'com.github.hierynomus.license' version '0.15.0'
 }
 
 defaultTasks 'clean', 'build'
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
-}
-
-dependencies {
-    implementation localGroovy()
-}
-
-build.dependsOn 'licenseMain'

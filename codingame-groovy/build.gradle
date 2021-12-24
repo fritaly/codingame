@@ -16,3 +16,5 @@ dependencies {
 license {
     header = rootProject.file('LICENSE')
 }
+
+build.dependsOn 'license'
