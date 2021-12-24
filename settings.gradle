@@ -1,3 +1,4 @@
 include ':codingame-java'
+include ':codingame-groovy'
 
 rootProject.name = 'codingame'

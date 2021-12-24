@@ -1,0 +1,18 @@
+plugins {
+    id 'groovy'
+    id 'com.github.hierynomus.license'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+dependencies {
+    implementation localGroovy()
+}
+
+license {
+    header = rootProject.file('LICENSE')
+}
