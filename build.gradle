@@ -1,10 +1,21 @@
-apply plugin: 'groovy'
-apply plugin: 'idea'
+plugins {
+    id 'groovy'
+    id 'com.github.hierynomus.license' version '0.15.0'
+}
 
 defaultTasks 'clean', 'build'
 
-sourceCompatibility = targetCompatibility = '1.8'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
 
 dependencies {
     implementation localGroovy()
+}
+
+build.dependsOn 'licenseMain'
+
+license {
 }
