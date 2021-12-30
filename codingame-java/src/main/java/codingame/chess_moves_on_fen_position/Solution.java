@@ -59,8 +59,8 @@ class Solution {
             return id.length() > 4;
         }
 
-        PieceType getPromotionType() {
-            return PieceType.fromId(Character.toLowerCase(id.charAt(4)));
+        Piece getPromotionPiece() {
+            return Piece.fromChar(id.charAt(4));
         }
 
         int deltaX() {
@@ -263,7 +263,7 @@ class Solution {
 
             // Pawn promotion
             if (piece.isPawn() && move.isPawnPromotion()) {
-                setPiece(move.end, new Piece(move.getPromotionType(), piece.color));
+                setPiece(move.end, move.getPromotionPiece());
             }
         }
 
