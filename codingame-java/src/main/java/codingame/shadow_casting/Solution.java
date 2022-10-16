@@ -15,67 +15,70 @@
  */
 package codingame.shadow_casting;
 
-import java.util.*;
+import java.util.List;
+import java.util.Scanner;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class Solution {
 
-    private static void fill(char[][] source, char[][] output, int d) {
-        for (int y = 0; y < source.length; y++) {
-            for (int x = 0; x < source[y].length; x++) {
-                if (source[y][x] != ' ') {
-                    output[y+d][x+d] = (d == 2) ? '`' : (d == 1) ? '-' : source[y][x];
-                }
-            }
-        }
+    private static String padRight(String s, int length) {
+        return (s.length() >= length) ? s : padRight(s + " ", length);
     }
 
     private static String trimRight(String s) {
-        int index = s.length() - 1;
-
-        while (s.charAt(index) == ' ') {
-            index--;
-        }
-
-        return s.substring(0, index + 1);
+        return s.endsWith(" ") ? trimRight(s.substring(0, s.length() - 1)) : s;
     }
 
     public static void main(String args[]) {
         final Scanner scanner = new Scanner(System.in);
-        final int N = scanner.nextInt();
+        final int height = scanner.nextInt();
 
-        System.err.println(N);
+        System.err.println(height);
 
         if (scanner.hasNextLine()) {
             scanner.nextLine();
         }
 
-        final char[][] grid = new char[N][];
+        final List<String> lines = IntStream.range(0, height)
+                .mapToObj(n -> scanner.nextLine())
+                .collect(Collectors.toList());
 
-        int width = 0;
+        final int width = lines.stream().mapToInt(s -> s.length()).max().orElse(0);
 
-        for (int y = 0; y < N; y++) {
-            final String line = scanner.nextLine();
+        final char[][] grid = new char[height + 2][width + 2];
+
+        for (int y = 0; y < height; y++) {
+            final String line = lines.get(y);
 
             System.err.println(line);
 
-            grid[y] = line.toCharArray();
-
-            width = Math.max(width, grid[y].length);
+            grid[y] = padRight(line, width + 2).toCharArray();
         }
 
-        final char[][] output = new char[N+2][];
+        grid[height] = padRight("", width + 2).toCharArray();
+        grid[height + 1] = padRight("", width + 2).toCharArray();
 
-        for (int y = 0; y < N + 2; y++) {
-            output[y] = new char[width + 2];
+        for (int y = 0; y < height + 2; y++) {
+            for (int x = 0; x < width + 2; x++) {
+                final char c = grid[y][x];
 
-            Arrays.fill(output[y], ' ');
+                if ((y == height + 1) || (x == width + 1)) {
+                    continue;
+                }
+
+                if (grid[y+1][x+1] == ' ') {
+                    if (c == '#') {
+                        grid[y+1][x+1] = '-';
+                    } else if (c == '-') {
+                        grid[y+1][x+1] = '`';
+                    }
+                }
+            }
         }
 
-        for (int i = 2; i >= 0; i--) {
-            fill(grid, output,  i);
+        for (int y = 0; y < height + 2; y++) {
+            System.out.println(trimRight(new String(grid[y])));
         }
-
-        System.out.println(Arrays.asList(output).stream().map(a -> trimRight(new String(a))).collect(Collectors.joining("\n")));
     }
 }
